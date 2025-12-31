@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMTP Benchmark</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+
+        h1 {
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .result-box {
+            margin-top: 20px;
+            white-space: pre;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+        }
+
+        button:hover {
+            background: #444;
+        }
+
+        .running {
+            color: #ff0;
+        }
+
+        .done {
+            color: #0f0;
+        }
+
+        .error {
+            color: #f00;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>WMTP Performance Benchmark</h1>
+    <p>Server: <input type="text" id="serverUrl" value="https://localhost:4433"
+            style="background:#333; color:#fff; border:1px solid #555; padding:5px; width:300px;"></p>
+    <button id="startBtn">Start Benchmark</button>
+    <div id="status" style="margin-top: 20px;"></div>
+    <div id="results" class="result-box"></div>
+
+    <script src="js/transport.js"></script>
+    <script>
+        const ACTIVE_HASH = 'pvfqEo/lPuFQ3MgDv3U2WWMrxO99qX60Ys0ZLImRkbw=';
+
+        const startBtn = document.getElementById('startBtn');
+        const statusDiv = document.getElementById('status');
+        const resultsDiv = document.getElementById('results');
+        const serverUrlInput = document.getElementById('serverUrl');
+
+        function log(msg) {
+            resultsDiv.textContent += msg + '\n';
+        }
+
+        startBtn.addEventListener('click', async () => {
+            startBtn.disabled = true;
+            resultsDiv.textContent = '';
+            statusDiv.textContent = 'Running...';
+            statusDiv.className = 'running';
+
+            const url = serverUrlInput.value;
+            const transport = new WMTPTransport();
+
+            transport.setCertificateHash(ACTIVE_HASH);
+
+            try {
+                // 1. Connection Latency
+                log('--- 1. Connection Latency ---');
+                const t0 = performance.now();
+                await transport.connect(url);
+                const t1 = performance.now();
+                const connectTime = t1 - t0;
+                log(`Connection Established: ${connectTime.toFixed(2)} ms`);
+
+                // 2. RTT (Ping)
+                log('\n--- 2. Round Trip Time (RTT) ---');
+                let totalRtt = 0;
+                const iterations = 10;
+                for (let i = 0; i < iterations; i++) {
+                    const { responseTimeMs } = await transport.sendWithTiming({ cmd: 'PING' });
+                    totalRtt += responseTimeMs;
+                    await new Promise(r => setTimeout(r, 50));
+                }
+                const avgRtt = totalRtt / iterations;
+                log(`Average RTT (10 pings): ${avgRtt.toFixed(2)} ms`);
+
+                // 3. Throughput (Upload)
+                log('\n--- 3. Throughput (1MB Upload) ---');
+                const size = 1024 * 1024; // 1MB
+                const buffer = new Uint8Array(size);
+                for (let i = 0; i < size; i++) buffer[i] = i % 255;
+
+                log('(Authenticating...)');
+                const { response: initSess } = await transport.sendWithTiming({ cmd: 'INIT' });
+
+                const { response: authResp } = await transport.sendWithTiming({
+                    cmd: 'AUTH',
+                    data: { email: 'benchmark@wmtp.online' }
+                });
+
+                if (authResp.status === 'OK') {
+                    const token = authResp.session_token;
+
+                    const { response: uploadInit } = await transport.sendWithTiming({
+                        cmd: 'ATTACH_UPLOAD_INIT',
+                        data: {
+                            session_token: token,
+                            filename: 'bench_1mb.bin',
+                            mime_type: 'application/octet-stream',
+                            size_bytes: size
+                        }
+                    });
+
+                    if (uploadInit.status === 'OK') {
+                        const uploadId = uploadInit.data.upload.upload_id;
+
+                        const tStart = performance.now();
+                        const { send } = await transport.openAttachmentStream();
+
+                        const header = JSON.stringify({
+                            upload_id: uploadId,
+                            filename: 'bench_1mb.bin',
+                            mime_type: 'application/octet-stream',
+                            size_bytes: size
+                        }) + '\n';
+
+                        const writer = send;
+                        await writer.write(new TextEncoder().encode(header));
+                        await writer.write(buffer);
+                        await writer.close();
+
+                        const tEnd = performance.now();
+                        const durationSec = (tEnd - tStart) / 1000;
+                        const speed = 1 / durationSec; // MB/s
+
+                        log(`Upload Time (1MB): ${(tEnd - tStart).toFixed(2)} ms`);
+                        log(`Throughput (1MB): ${speed.toFixed(2)} MB/s`);
+                    } else {
+                        log(`Upload Init Failed: ${uploadInit.msg}`);
+                    }
+
+                    // 4. Large File Throughput (10MB)
+                    log('\n--- 4. Throughput (10MB Upload) ---');
+                    const size10 = 10 * 1024 * 1024; // 10MB
+                    const buffer10 = new Uint8Array(size10);
+
+                    const { response: uploadInit10 } = await transport.sendWithTiming({
+                        cmd: 'ATTACH_UPLOAD_INIT',
+                        data: {
+                            session_token: token,
+                            filename: 'bench_10mb.bin',
+                            mime_type: 'application/octet-stream',
+                            size_bytes: size10
+                        }
+                    });
+
+                    if (uploadInit10.status === 'OK') {
+                        const uploadId = uploadInit10.data.upload.upload_id;
+                        const tStart = performance.now();
+                        const { send } = await transport.openAttachmentStream();
+
+                        const header = JSON.stringify({
+                            upload_id: uploadId,
+                            filename: 'bench_10mb.bin',
+                            mime_type: 'application/octet-stream',
+                            size_bytes: size10
+                        }) + '\n';
+
+                        const writer = send;
+                        await writer.write(new TextEncoder().encode(header));
+                        await writer.write(buffer10);
+                        await writer.close();
+
+                        const tEnd = performance.now();
+                        const durationSec = (tEnd - tStart) / 1000;
+                        const speed = (size10 / 1024 / 1024) / durationSec; // MB/s
+
+                        log(`Upload Time (10MB): ${(tEnd - tStart).toFixed(2)} ms`);
+                        log(`Throughput (10MB): ${speed.toFixed(2)} MB/s`);
+                    }
+
+                    // 5. Requests Per Second (RPS)
+                    log('\n--- 5. Stress Test (1000 Pings) ---');
+                    const pings = 1000;
+                    const tRpsStart = performance.now();
+                    const promises = [];
+                    for (let i = 0; i < pings; i++) {
+                        promises.push(transport.send({ cmd: 'PING' }));
+                    }
+                    await Promise.all(promises);
+                    const tRpsEnd = performance.now();
+                    const durationRps = (tRpsEnd - tRpsStart) / 1000;
+                    const rps = pings / durationRps;
+
+                    log(`Processed ${pings} requests in ${durationRps.toFixed(2)}s`);
+                    log(`RPS: ${rps.toFixed(2)} req/sec`);
+
+                    // 6. Jitter (Variance in RTT)
+                    log('\n--- 6. Jitter Analysis ---');
+                    const rttSamples = [];
+                    for (let i = 0; i < 20; i++) {
+                        const { responseTimeMs } = await transport.sendWithTiming({ cmd: 'PING' });
+                        rttSamples.push(responseTimeMs);
+                        await new Promise(r => setTimeout(r, 10));
+                    }
+                    const mean = rttSamples.reduce((a, b) => a + b, 0) / rttSamples.length;
+                    const variance = rttSamples.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / rttSamples.length;
+                    const stdDev = Math.sqrt(variance);
+                    log(`Jitter (Std Dev): ${stdDev.toFixed(2)} ms`);
+
+                    // 7. Concurrency (Parallel Streams)
+                    log('\n--- 7. Concurrency (50 Parallel Streams) ---');
+                    const streams = 50;
+                    const tConcStart = performance.now();
+                    const streamPromises = [];
+
+                    const { response: concInit } = await transport.sendWithTiming({
+                        cmd: 'ATTACH_UPLOAD_INIT',
+                        data: {
+                            session_token: token,
+                            filename: 'conc_test.bin',
+                            mime_type: 'application/octet-stream',
+                            size_bytes: 100
+                        }
+                    });
+
+                    if (concInit.status === 'OK') {
+                        const upId = concInit.data.upload.upload_id;
+                        const smallPayload = new Uint8Array(100);
+
+                        for (let i = 0; i < streams; i++) {
+                            streamPromises.push((async () => {
+                                const { send } = await transport.openAttachmentStream();
+                                const header = JSON.stringify({
+                                    upload_id: upId,
+                                    filename: `conc_${i}.bin`,
+                                    mime_type: 'application/octet-stream',
+                                    size_bytes: 100
+                                }) + '\n';
+                                const writer = send;
+                                await writer.write(new TextEncoder().encode(header));
+                                await writer.write(smallPayload);
+                                await writer.close();
+                            })());
+                        }
+
+                        await Promise.all(streamPromises);
+                        const tConcEnd = performance.now();
+                        log(`Opened & closed ${streams} streams in ${(tConcEnd - tConcStart).toFixed(2)} ms`);
+                    }
+
+                    // 8. Datagram Loss (Simulated)
+                    log('\n--- 8. Datagram Loss ---');
+                    log('Skipped (Server echo support required)');
+
+                } else {
+                    log(`Auth Failed: ${authResp.msg}`);
+                }
+
+                await transport.disconnect();
+                statusDiv.textContent = 'Done';
+                statusDiv.className = 'done';
+
+            } catch (e) {
+                log(`\nError: ${e.message}`);
+                statusDiv.textContent = 'Error';
+                statusDiv.className = 'error';
+            } finally {
+                startBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>

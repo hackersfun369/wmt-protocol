@@ -1,0 +1,89 @@
+Folder PATH listing for volume OS
+Volume serial number is 0E5A-D7C2
+C:.
+|   comm.rs
+|   config.rs
+|   connection.rs
+|   lib.rs
+|   main.rs
+|   server.rs
+|   session.rs
+|   structure.txt
+|   token.rs
+|   
++---commands
+|   |   mod.rs
+|   |   
+|   +---connections
+|   |   |   mod.rs
+|   |   |   
+|   |   \---list
+|   |           handler.rs
+|   |           mod.rs
+|   |           
+|   +---health
+|   |   |   mod.rs
+|   |   |   
+|   |   \---ping
+|   |           handler.rs
+|   |           mod.rs
+|   |           
+|   +---mailbox
+|   |   |   db.rs
+|   |   |   mod.rs
+|   |   |   
+|   |   +---mail_list
+|   |   |       handler.rs
+|   |   |       mod.rs
+|   |   |       
+|   |   +---mb_create
+|   |   |       handler.rs
+|   |   |       mod.rs
+|   |   |       
+|   |   \---mb_list
+|   |           handler.rs
+|   |           mod.rs
+|   |           
+|   \---sessions
+|       |   mod.rs
+|       |   
+|       +---auth
+|       |       handler.rs
+|       |       mod.rs
+|       |       
+|       +---init
+|       |       handler.rs
+|       |       mod.rs
+|       |       
+|       +---logout
+|       |       handler.rs
+|       |       mod.rs
+|       |       
+|       +---resume
+|       |       handler.rs
+|       |       mod.rs
+|       |       
+|       +---session_info
+|       |       handler.rs
+|       |       mod.rs
+|       |       
+|       +---session_kill
+|       |       handler.rs
+|       |       mod.rs
+|       |       
+|       +---session_list
+|       |       handler.rs
+|       |       mod.rs
+|       |       
+|       +---session_resume_suspended
+|       |       handler.rs
+|       |       mod.rs
+|       |       
+|       \---session_suspend
+|               handler.rs
+|               mod.rs
+|               
+\---error
+        codes.rs
+        mod.rs
+        

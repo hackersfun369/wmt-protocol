@@ -1,0 +1,102 @@
+[
+  {
+    "command": "INIT",
+    "status": "OK"
+  },
+  {
+    "command": "AUTH",
+    "status": "OK"
+  },
+  {
+    "command": "RESUME",
+    "status": "OK"
+  },
+  {
+    "command": "SESSION_INFO",
+    "status": "OK"
+  },
+  {
+    "command": "SESSION_LIST",
+    "status": "OK"
+  },
+  {
+    "command": "SESSION_KILL",
+    "status": "ERR",
+    "msg": "Target token not found"
+  },
+  {
+    "command": "PING",
+    "status": "OK"
+  },
+  {
+    "command": "PONG",
+    "status": "OK"
+  },
+  {
+    "command": "HB",
+    "status": "OK"
+  },
+  {
+    "command": "MB_LIST",
+    "status": "OK"
+  },
+  {
+    "command": "MAIL_LIST",
+    "status": "OK"
+  },
+  {
+    "command": "MSG_SEND",
+    "status": "OK"
+  },
+  {
+    "command": "MSG_LIST",
+    "status": "OK"
+  },
+  {
+    "command": "MSG_GET",
+    "status": "OK"
+  },
+  {
+    "command": "ATTACH_UPLOAD_INIT",
+    "status": "OK"
+  },
+  {
+    "command": "ATTACH_STREAM",
+    "status": "SUCCESS"
+  },
+  {
+    "command": "MSG_THREAD",
+    "status": "OK"
+  },
+  {
+    "command": "SEARCH",
+    "status": "OK"
+  },
+  {
+    "command": "SEARCH_GLOBAL",
+    "status": "OK"
+  },
+  {
+    "command": "SEARCH_ADV",
+    "status": "OK"
+  },
+  {
+    "command": "PROFILE_GET",
+    "status": "OK"
+  },
+  {
+    "command": "PREF_GET",
+    "status": "OK"
+  },
+  {
+    "command": "ATTACH_GET",
+    "status": "ERR",
+    "msg": "Unexpected HB response"
+  },
+  {
+    "command": "LOGOUT",
+    "status": "ERR",
+    "msg": "Token invalid"
+  }
+]
+// Note: This is a summarized version of the 57-command run results.

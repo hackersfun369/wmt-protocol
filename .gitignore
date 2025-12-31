@@ -1,0 +1,22 @@
+# Rust
+/server/target/
+**/*.rs.bk
+
+# Sensitive information
+/certs/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Large binaries (optional, but good practice if they change often)
+# WMTP_Spec.pdf
+
+# Logs
+*.log
+
+# VS Code (local user settings)
+.vscode/
+
+# Web dependencies
+node_modules/

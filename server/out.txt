@@ -1,0 +1,74 @@
+   Compiling wmtp-server v0.1.0 (C:\Drive_D\webdev\WMTP\server)
+warning: unused imports: `Duration` and `SystemTime`
+ --> src\comm.rs:3:17
+  |
+3 | use std::time::{Duration, SystemTime};
+  |                 ^^^^^^^^  ^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `DateTime` and `Utc`
+ --> src\comm.rs:4:14
+  |
+4 | use chrono::{DateTime, Utc};
+  |              ^^^^^^^^  ^^^
+
+warning: unused import: `mongodb::bson::oid::ObjectId`
+ --> src\commands\mailbox\mb_rename\handler.rs:4:5
+  |
+4 | use mongodb::bson::oid::ObjectId;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `mongodb::bson::oid::ObjectId`
+ --> src\commands\mailbox\mb_delete\handler.rs:4:5
+  |
+4 | use mongodb::bson::oid::ObjectId;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `conn_id`
+   --> src\server.rs:454:5
+    |
+454 |     conn_id: u64,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_conn_id`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `messages_coll`
+   --> src\server.rs:529:5
+    |
+529 |     messages_coll: &Collection<Message>,
+    |     ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_messages_coll`
+
+warning: value assigned to `result` is never read
+  --> src\commands\session\session_resume_suspended\handler.rs:17:13
+   |
+17 |     let mut result = None;
+   |             ^^^^^^
+   |
+   = help: maybe it is overwritten before being read?
+   = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+error[E0061]: this method takes 2 arguments but 3 arguments were supplied
+  --> src\commands\user\pref_set\handler.rs:37:22
+   |
+37 |     match prefs_coll.update_one(
+   |                      ^^^^^^^^^^
+...
+40 |         options
+   |         ------- unexpected argument #3 of type `UpdateOptions`
+   |
+note: method defined here
+  --> C:\Users\sathy\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\mongodb-3.4.1\src\action\update.rs:58:12
+   |
+58 |     pub fn update_one(
+   |            ^^^^^^^^^^
+help: remove the extra argument
+   |
+39 -         doc! { "$set": prefs },
+40 -         options
+39 +         doc! { "$set": prefs }
+   |
+
+For more information about this error, try `rustc --explain E0061`.
+warning: `wmtp-server` (lib) generated 7 warnings
+error: could not compile `wmtp-server` (lib) due to 1 previous error; 7 warnings emitted
