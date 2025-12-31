@@ -40,7 +40,7 @@ cd wmtp
 bash
 cd certs
 openssl genpkey -algorithm RSA -out key.pem
-openssl req -new -x509 -key key.pem -out cert.pem -days 365 -subj "/CN=localhost"
+openssl req -new -x509 -key key.pem -out cert.pem -days 10 -subj "/CN=localhost"  /// browsers can only validate certificates only for a limited time
 3. Run Server
 bash
 cd server
