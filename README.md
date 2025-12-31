@@ -94,5 +94,4 @@ MIT License - see LICENSE
 🙏 Acknowledgments
 wtransport - Rust WebTransport
 tokio - Async runtime
-Cloudflare - DNS & hosting
-Made with ❤️ for the future of email https://wmtp.online
+Made with ❤️ for the future of email
