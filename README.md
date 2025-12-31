@@ -6,7 +6,7 @@
 
 A modern, secure, low-latency email transfer protocol built on QUIC/WebTransport.
 
-🌐 **Website:** [https://wmtp.online](https://wmtp.online)
+🌐 **Website:** [[https://wmtp-docs.netlify.app/](https://wmtp-docs.netlify.app/)]
 
 ## ✨ Features
 
