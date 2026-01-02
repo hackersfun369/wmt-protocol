@@ -83,10 +83,14 @@ cd wmt-protocol
 ### 2. Generate Certs (or use provided)
 Ensure `certs/cert.pem` and `certs/key.pem` are present.
 ```bash
+mkdir certs
 cd certs
 # Generate self-signed certs for localhost
 # Note: Browsers typically require short-lived or trusted certificates for WebTransport.
 openssl req -new -x509 -nodes -keyout key.pem -out cert.pem -days 10 -subj "/CN=localhost"
+(or)
+using node.js enable us to create certificates automatically. Run
+node get_hash.js
 ```
 
 ### 3. Run Server
