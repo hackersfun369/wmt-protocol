@@ -1,7 +1,7 @@
 # WMTP - WebTransport Mail Transfer Protocol
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-MIT-red)
 ![Transport](https://img.shields.io/badge/transport-WebTransport/QUIC-purple)
 ![Verified](https://img.shields.io/badge/protocol-57_commands_verified-success)
 
@@ -132,12 +132,9 @@ The complete specification of all 57 commands is available in [WMTP_API_REFERENC
 
 ---
 
-## 📄 License
-MIT License - see [LICENSE](LICENSE)
-
 ## 🙏 Acknowledgments
 - **wtransport**: High-level WebTransport server implementation in Rust.
 - **tokio**: The asynchronous runtime for the Rust ecosystem.
 - **mongodb**: High-performance persistence layer.
 
-Made with ❤️ for the future of email | [wmtp.online](https://wmtp.online)
+Made with ❤️ for the future of email.
