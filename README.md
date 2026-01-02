@@ -90,7 +90,7 @@ cd certs
 openssl req -new -x509 -nodes -keyout key.pem -out cert.pem -days 10 -subj "/CN=localhost"
 (or)
 using node.js enable us to create certificates automatically. Run
-node get_hash.js
+node smart_setup.js
 ```
 
 ### 3. Run Server
