@@ -1,97 +1,143 @@
 # WMTP - WebTransport Mail Transfer Protocol
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Transport](https://img.shields.io/badge/transport-WebTransport-purple)
+![Transport](https://img.shields.io/badge/transport-WebTransport/QUIC-purple)
+![Verified](https://img.shields.io/badge/protocol-57_commands_verified-success)
 
-A modern, secure, low-latency email transfer protocol built on QUIC/WebTransport.
+A next-generation, secure, low-latency email transfer protocol built on **QUIC** and **WebTransport**. WMTP unifies message submission and retrieval into a single, encrypted, stateful connection, eliminating Head-of-Line (HoL) blocking and high handshake latency.
 
-🌐 **Website:** [[https://wmtp-docs.netlify.app/](https://wmtp-docs.netlify.app/)]
+🌐 **Website:** [https://wmtp-docs.netlify.app/](https://wmtp-docs.netlify.app/)
+
+---
 
 ## ✨ Features
 
-- 🚀 **Built on QUIC** - Faster connections, multiplexed streams
-- 🔒 **Always Encrypted** - TLS 1.3 mandatory
-- ⚡ **Low Latency** - Real-time message delivery
-- 🌐 **Browser Native** - Works via WebTransport API
-- 📱 **Mobile Friendly** - Connection migration support
-- 🔧 **Simple Protocol** - JSON-based, easy to implement
+- 🚀 **QUIC-Powered** - Native multiplexing via independent data streams (eliminates HoL blocking).
+- 🦀 **Rust Core** - High-performance, memory-safe backend built with `tokio` and `wtransport`.
+- 🔒 **Always Encrypted** - Mandatory TLS 1.3 with 1-RTT connection establishment.
+- 📁 **Dual-Plane Architecture** - Dedicated planes for JSON Control (Low-latency) and Raw Binary Data (High-throughput).
+- ⚡ **O(1) Memory Streaming** - Zero-copy attachment handling directly to MongoDB GridFS.
+- 📱 **Connection Migration** - Sessions survive IP changes (e.g., switching from Wi-Fi to 5G) seamlessly.
+- 🧪 **Full Verification** - 100% audited protocol with 57 commands verified via automated browser testing.
+
+---
 
 ## 🏗️ Architecture
 
-┌──────────┐ WebTransport/QUIC ┌──────────┐
-│ Client │◄─────────────────────────►│ Server │
-│ (Browser)│ │ (Rust) │
-└──────────┘ └──────────┘
-text
+WMTP decouples control logic from bulk data transport using a multi-stream approach:
 
-## 🚀 Quick Start
+```mermaid
+graph LR
+    subgraph Client [Browser Client]
+        UI[UI / App]
+        WT[WebTransport Adapter]
+    end
+
+    subgraph Server [WMTP Rust Server]
+        H[Stream Handlers]
+        S[Session Manager]
+        I[I/O Reactor]
+    end
+
+    subgraph DB [Persistence]
+        M[(MongoDB)]
+        G[GridFS]
+    end
+
+    UI <--> WT
+    WT -- "Control Stream (JSON)" --> H
+    WT -- "Attachment Stream (Binary)" --> H
+    H <--> S
+    S <--> I
+    I <--> M
+    I <--> G
+```
+
+---
+
+## 🚀 Performance Benchmarks
+
+Measured on a single connection over loopback:
+
+- **Handshake Latency**: ~20ms (1-RTT)
+- **Avg. Command RTT**: < 4ms
+- **Binary Throughput**: 33+ MB/s (Raw binary, no Base64 overhead)
+- **Concurrency**: 8,700+ Requests Per Second sustained
+
+---
+
+## 📖 Quick Start
 
 ### Prerequisites
-- Rust 1.70+
-- OpenSSL 3.x
-- Modern browser (Chrome 97+, Edge 97+, Firefox 114+)
+- **Rust** 1.75+
+- **MongoDB** 6.0+ (running at `localhost:27017`)
+- **Modern Browser** (Chrome 97+, Edge 97+, Firefox 114+)
 
-### 1. Clone
+### 1. Setup
 ```bash
-git clone https://github.com/yourusername/wmtp.git
-cd wmtp
-2. Generate Certificates
-bash
+git clone https://github.com/hackersfun369/wmt-protocol.git
+cd wmt-protocol
+```
+
+### 2. Generate Certs (or use provided)
+Ensure `certs/cert.pem` and `certs/key.pem` are present.
+```bash
 cd certs
-openssl genpkey -algorithm RSA -out key.pem
-openssl req -new -x509 -key key.pem -out cert.pem -days 10 -subj "/CN=localhost"  /// browsers can only validate certificates only for a limited time
-3. Run Server
-bash
+# Generate self-signed certs for localhost
+# Note: Browsers typically require short-lived or trusted certificates for WebTransport.
+openssl req -new -x509 -nodes -keyout key.pem -out cert.pem -days 10 -subj "/CN=localhost"
+```
+
+### 3. Run Server
+```bash
 cd server
 cargo run
-4. Open Client
-Open client/app.html in your browser.
-📁 Project Structure
-text
-wmtp/
-├── server/          # Rust WebTransport server
-├── client/          # Browser client (HTML/JS)
-├── certs/           # TLS certificates
-├── docs/            # Documentation
-└── scripts/         # Deployment scripts
-📖 Protocol
-Commands
-Command	Description
-INIT	Initialize session
-AUTH	Authenticate with email
-RESUME	Resume session
-LOGOUT	End session
-PING	Test connectivity
-STATUS	Server status
-INFO	Server info
-Example
-javascript
-// Connect
-const transport = new WebTransport("https://localhost:4433");
-await transport.ready;
+```
 
-// Authenticate
-send({ cmd: "AUTH", data: { email: "user@example.com" } });
-See docs/PROTOCOL.md for full specification.
-🌍 Deployment
-Server (VPS)
-bash
-./scripts/setup-server.sh
-Client (Cloudflare Pages)
-Push client/ to GitHub, connect to Cloudflare Pages.
-🛠️ Development
-Server
-bash
-cd server
-cargo run          # Development
-cargo build --release  # Production
-cargo test         # Run tests
-Client
-Simply open client/app.html in browser.
-📄 License
-MIT License - see LICENSE
-🙏 Acknowledgments
-wtransport - Rust WebTransport
-tokio - Async runtime
-Made with ❤️ for the future of email
+### 4. Run Automated Tests
+Open `client/auto_tester.html` in your browser. This will run the full 57-command verification suite.
+
+---
+
+## 📁 Project Structure
+
+```text
+wmt-protocol/
+├── server/          # Rust WebTransport server (Tokio + Wtransport)
+│   └── src/commands # 57 Command Handlers (Mailbox, MSG, Auth, etc.)
+├── client/          # Browser client implementation
+│   ├── js/          # Transport & Protocol logic
+│   └── *.html       # UI, Auto-Tester, Benchmark tool
+├── docs/            # Full API Reference & Research Paper
+└── certs/           # TLS Certificates
+```
+
+---
+
+## 📖 API Reference
+The complete specification of all 57 commands is available in [WMTP_API_REFERENCE.html](docs/WMTP_API_REFERENCE.html).
+
+### Example Command
+```json
+// Request
+{
+  "cmd": "MSG_GET",
+  "data": {
+    "session_token": "...",
+    "id": "msg_id_123"
+  }
+}
+```
+
+---
+
+## 📄 License
+MIT License - see [LICENSE](LICENSE)
+
+## 🙏 Acknowledgments
+- **wtransport**: High-level WebTransport server implementation in Rust.
+- **tokio**: The asynchronous runtime for the Rust ecosystem.
+- **mongodb**: High-performance persistence layer.
+
+Made with ❤️ for the future of email | [wmtp.online](https://wmtp.online)
