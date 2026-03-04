@@ -15,7 +15,7 @@ class WMTPTransport {
         this.onError = null;
 
         // Certificate hash for self-signed certs
-        this.certHash = null;
+        this.certHash = 'hwkSz4hLSK4VNGThADyDcBiWwzQ4V2xadFmYSf5xJ58=';
 
         // For measuring response time of a single in-flight request
         this._pendingResolve = null;

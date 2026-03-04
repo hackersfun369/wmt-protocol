@@ -1,5 +1,5 @@
 use futures_util::stream::TryStreamExt;
-use mongodb::bson::{self, doc, oid::ObjectId, DateTime as BsonDateTime};
+use mongodb::bson::{self, doc as bson_doc, oid::ObjectId, DateTime as BsonDateTime};
 use mongodb::{Collection, Database};
 use serde::{Deserialize, Serialize};
 use mongodb::error::Error as MongoError;
@@ -97,7 +97,7 @@ impl MailboxRepository {
     for (code, name) in codes.iter() {
         let existing = self
             .folders
-            .find_one(doc! { "code": code })
+            .find_one(bson_doc! { "code": code })
             .await?;
         if existing.is_none() {
             let folder = Folder {
@@ -123,15 +123,15 @@ impl MailboxRepository {
         limit: u64,
     ) -> mongodb::error::Result<Vec<Message>> {
         let pipeline = vec![
-            doc! {
+            bson_doc! {
                 "$match": {
                     "userId": user_id,
                     "folderCode": folder_code,
                 }
             },
-            doc! { "$sort": { "receivedAt": -1 } },
-            doc! { "$skip": i64::try_from(offset).unwrap_or(0) },
-            doc! { "$limit": i64::try_from(limit).unwrap_or(20) },
+            bson_doc! { "$sort": { "receivedAt": -1 } },
+            bson_doc! { "$skip": i64::try_from(offset).unwrap_or(0) },
+            bson_doc! { "$limit": i64::try_from(limit).unwrap_or(20) },
         ];
 
         let mut cursor = self.messages.aggregate(pipeline).await?;
@@ -149,7 +149,7 @@ impl MailboxRepository {
         user_id: &ObjectId,
     ) -> mongodb::error::Result<Vec<MbListFolderDto>> {
         // Load all global folders
-        let mut cursor = self.folders.find(doc! {}).await?;
+        let mut cursor = self.folders.find(bson_doc! {}).await?;
         let mut result = Vec::new();
 
         while let Some(folder) = cursor.try_next().await? {
@@ -158,7 +158,7 @@ impl MailboxRepository {
             let total = self
                 .messages
                 .count_documents(
-                    doc! {
+                    bson_doc! {
                         "userId": user_id,
                         "folderCode": code,
                     }
@@ -168,7 +168,7 @@ impl MailboxRepository {
             let unread = self
                 .messages
                 .count_documents(
-                    doc! {
+                    bson_doc! {
                         "userId": user_id,
                         "folderCode": code,
                         "unread": true,
@@ -229,8 +229,8 @@ impl MailboxRepository {
     ) -> mongodb::error::Result<()> {
         self.messages
             .update_one(
-                doc! { "_id": msg_id, "userId": user_id },
-                doc! { "$set": { "folderCode": target_code } },
+                bson_doc! { "_id": msg_id, "userId": user_id },
+                bson_doc! { "$set": { "folderCode": target_code } },
             )
             .await?;
 
@@ -248,7 +248,7 @@ pub async fn create_user_folder(
     // Check if folder with same code already exists for this user
     if self
         .folders
-        .find_one(doc! { "userId": &user_id, "code": code })
+        .find_one(bson_doc! { "userId": &user_id, "code": code })
         .await?
         .is_some()
     {
@@ -274,8 +274,8 @@ pub async fn rename_user_folder(
     new_name: &str,
 ) -> Result<u64, MongoError> {
     let res = self.folders.update_one(
-        doc! { "userId": user_id, "code": folder_code },
-        doc! { "$set": { "name": new_name } },
+        bson_doc! { "userId": user_id, "code": folder_code },
+        bson_doc! { "$set": { "name": new_name } },
     ).await?;
     Ok(res.modified_count)
 }
@@ -289,7 +289,7 @@ pub async fn delete_user_folder(
     // Usually recommended to move messages to BIN or just delete.
     // For now, let's just delete the folder metadata.
     let res = self.folders.delete_one(
-        doc! { "userId": user_id, "code": folder_code },
+        bson_doc! { "userId": user_id, "code": folder_code },
     ).await?;
     Ok(res.deleted_count)
 }
@@ -303,7 +303,7 @@ pub async fn get_folder_info_for_user(
         // Load folder meta (global or user-specific)
         let folder = self
             .folders
-            .find_one(doc! { "code": folder_code })
+            .find_one(bson_doc! { "code": folder_code })
             .await?
             .ok_or_else(|| mongodb::error::Error::custom("Folder not found"))?;
 
@@ -311,7 +311,7 @@ pub async fn get_folder_info_for_user(
         let total = self
             .messages
             .count_documents(
-                doc! {
+                bson_doc! {
                     "userId": user_id,
                     "folderCode": folder_code,
                 }
@@ -321,7 +321,7 @@ pub async fn get_folder_info_for_user(
         let unread = self
             .messages
             .count_documents(
-                doc! {
+                bson_doc! {
                     "userId": user_id,
                     "folderCode": folder_code,
                     "unread": true,
@@ -333,14 +333,14 @@ pub async fn get_folder_info_for_user(
         let mut cursor = self
             .messages
             .aggregate(vec![
-                doc! {
+                bson_doc! {
                     "$match": {
                         "userId": user_id,
                         "folderCode": folder_code,
                     }
                 },
-                doc! { "$sort": { "receivedAt": -1 } },
-                doc! { "$limit": 1 },
+                bson_doc! { "$sort": { "receivedAt": -1 } },
+                bson_doc! { "$limit": 1 },
             ])
             .await?;
 
@@ -378,7 +378,7 @@ pub async fn get_folder_info_for_user(
     let result = self
         .messages
         .delete_many(
-            doc! {
+            bson_doc! {
                 "userId": user_id,
                 "folderCode": "BIN",
             }
@@ -462,7 +462,7 @@ pub async fn get_message_for_user(
         let msg = self
             .messages
             .find_one(
-                doc! {
+                bson_doc! {
                     "_id": msg_id,
                     "userId": user_id,
                 }
@@ -479,13 +479,13 @@ pub async fn get_message_for_user(
 ) -> mongodb::error::Result<Option<Message>> {
     // Using aggregation with $match + $project to drop body field
     let pipeline = vec![
-        doc! {
+        bson_doc! {
             "$match": {
                 "_id": msg_id,
                 "userId": user_id,
             }
         },
-        doc! {
+        bson_doc! {
             "$project": {
                 "body": 0 // exclude body to keep it light
             }
@@ -512,7 +512,7 @@ pub async fn move_message_for_user(
     let existing = self
         .messages
         .find_one(
-            doc! {
+            bson_doc! {
                 "_id": msg_id,
                 "userId": user_id,
             }
@@ -527,11 +527,11 @@ pub async fn move_message_for_user(
     let res = self
         .messages
         .update_one(
-            doc! {
+            bson_doc! {
                 "_id": msg_id,
                 "userId": user_id,
             },
-            doc! {
+            bson_doc! {
                 "$set": { "folderCode": target_folder }
             },
         )
@@ -555,7 +555,7 @@ pub async fn copy_message_for_user(
     let src = match self
         .messages
         .find_one(
-            doc! {
+            bson_doc! {
                 "_id": msg_id,
                 "userId": user_id,
             }
@@ -601,7 +601,7 @@ pub async fn soft_delete_message_for_user(
     let existing = self
         .messages
         .find_one(
-            doc! {
+            bson_doc! {
                 "_id": msg_id,
                 "userId": user_id,
             }
@@ -616,11 +616,11 @@ pub async fn soft_delete_message_for_user(
     let res = self
         .messages
         .update_one(
-            doc! {
+            bson_doc! {
                 "_id": msg_id,
                 "userId": user_id,
             },
-            doc! {
+            bson_doc! {
                 "$set": { "folderCode": "BIN" }
             },
         )
@@ -642,7 +642,7 @@ pub async fn hard_delete_message_for_user(
     let res = self
         .messages
         .delete_one(
-            doc! {
+            bson_doc! {
                 "_id": msg_id,
                 "userId": user_id,
             }
@@ -662,7 +662,7 @@ pub async fn undelete_message_for_user(
     let existing = self
         .messages
         .find_one(
-            doc! {
+            bson_doc! {
                 "_id": msg_id,
                 "userId": user_id,
                 "folderCode": "BIN",
@@ -678,12 +678,12 @@ pub async fn undelete_message_for_user(
     let res = self
         .messages
         .update_one(
-            doc! {
+            bson_doc! {
                 "_id": msg_id,
                 "userId": user_id,
                 "folderCode": "BIN",
             },
-            doc! {
+            bson_doc! {
                 "$set": { "folderCode": target_folder }
             },
         )
@@ -725,11 +725,11 @@ pub async fn set_flags_for_message(
     let res = self
         .messages
         .update_one(
-            doc! {
+            bson_doc! {
                 "_id": msg_id,
                 "userId": user_id,
             },
-            doc! {
+            bson_doc! {
                 "$set": set_doc
             },
         )
@@ -747,11 +747,11 @@ pub async fn bulk_move_for_user(
     let res = self
         .messages
         .update_many(
-            doc! {
+            bson_doc! {
                 "userId": user_id,
                 "_id": { "$in": ids },
             },
-            doc! {
+            bson_doc! {
                 "$set": { "folderCode": target_folder }
             },
         )
@@ -775,7 +775,7 @@ pub async fn bulk_expunge_for_user(
     let res = self
         .messages
         .delete_many(
-            doc! {
+            bson_doc! {
                 "userId": user_id,
                 "_id": { "$in": ids },
             }
@@ -811,11 +811,11 @@ pub async fn bulk_set_flags_for_user(
     let res = self
         .messages
         .update_many(
-            doc! {
+            bson_doc! {
                 "userId": user_id,
                 "_id": { "$in": ids },
             },
-            doc! {
+            bson_doc! {
                 "$set": set_doc
             },
         )
@@ -833,7 +833,7 @@ pub async fn search_messages_simple(
     offset: u64,
     limit: u64,
 ) -> mongodb::error::Result<Vec<Message>> {
-    let mut filter = doc! {
+    let mut filter = bson_doc! {
         "userId": user_id,
         "folderCode": folder_code,
     };
@@ -853,8 +853,8 @@ pub async fn search_messages_simple(
             filter.insert(
                 "$or",
                 vec![
-                    doc! { "subject": { "$regex": &regex } },
-                    doc! { "snippet": { "$regex": &regex } },
+                    bson_doc! { "subject": { "$regex": &regex } },
+                    bson_doc! { "snippet": { "$regex": &regex } },
                 ],
             );
         }
@@ -863,7 +863,7 @@ pub async fn search_messages_simple(
     let mut cursor = self
         .messages
         .find(filter)
-        .sort(doc! { "receivedAt": -1 })
+        .sort(bson_doc! { "receivedAt": -1 })
         .skip(u64::try_from(offset).unwrap_or(0))
         .limit(i64::try_from(limit).unwrap_or(50))
         .await?;
@@ -885,7 +885,7 @@ pub async fn search_messages_global_simple(
     offset: u64,
     limit: u64,
 ) -> mongodb::error::Result<Vec<Message>> {
-    let mut filter = doc! {
+    let mut filter = bson_doc! {
         "userId": user_id,
     };
 
@@ -904,8 +904,8 @@ pub async fn search_messages_global_simple(
             filter.insert(
                 "$or",
                 vec![
-                    doc! { "subject": { "$regex": &regex } },
-                    doc! { "snippet": { "$regex": &regex } },
+                    bson_doc! { "subject": { "$regex": &regex } },
+                    bson_doc! { "snippet": { "$regex": &regex } },
                 ],
             );
         }
@@ -914,7 +914,7 @@ pub async fn search_messages_global_simple(
     let mut cursor = self
         .messages
         .find(filter)
-        .sort(doc! { "receivedAt": -1 })
+        .sort(bson_doc! { "receivedAt": -1 })
         .skip(u64::try_from(offset).unwrap_or(0))
         .limit(i64::try_from(limit).unwrap_or(50))
         .await?;
@@ -943,7 +943,7 @@ pub async fn search_messages_advanced(
     offset: u64,
     limit: u64,
 ) -> mongodb::error::Result<Vec<Message>> {
-    let mut filter = doc! {
+    let mut filter = bson_doc! {
         "userId": user_id,
     };
 
@@ -965,7 +965,7 @@ pub async fn search_messages_advanced(
                 pattern: to_val.to_string(),
                 options: "i".to_string(),
             };
-            filter.insert("to", doc! { "$regex": &regex });
+            filter.insert("to", bson_doc! { "$regex": &regex });
         }
     }
 
@@ -981,7 +981,7 @@ pub async fn search_messages_advanced(
 
     // date range on receivedAt
     if date_from.is_some() || date_to.is_some() {
-        let mut date_cond = doc! {};
+        let mut date_cond = bson_doc! {};
         if let Some(df) = date_from {
             date_cond.insert("$gte", df);
         }
@@ -1001,8 +1001,8 @@ pub async fn search_messages_advanced(
             filter.insert(
                 "$or",
                 vec![
-                    doc! { "subject": { "$regex": &regex } },
-                    doc! { "snippet": { "$regex": &regex } },
+                    bson_doc! { "subject": { "$regex": &regex } },
+                    bson_doc! { "snippet": { "$regex": &regex } },
                 ],
             );
         }
@@ -1011,7 +1011,7 @@ pub async fn search_messages_advanced(
     let mut cursor = self
         .messages
         .find(filter)
-        .sort(doc! { "receivedAt": -1 })
+        .sort(bson_doc! { "receivedAt": -1 })
         .skip(u64::try_from(offset).unwrap_or(0))
         .limit(i64::try_from(limit).unwrap_or(50))
         .await?;

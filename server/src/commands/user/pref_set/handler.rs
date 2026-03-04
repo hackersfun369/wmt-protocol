@@ -2,7 +2,7 @@ use crate::comm::{Request, Response};
 use crate::session::SessionStore;
 use crate::commands::user::pref_get::handler::PreferencesDoc;
 use mongodb::Collection;
-use mongodb::bson::doc;
+use mongodb::bson::doc as bson_doc;
 use mongodb::options::UpdateOptions;
 
 pub async fn handle_pref_set(
@@ -27,15 +27,15 @@ pub async fn handle_pref_set(
     let notifications_enabled = req.data.get("notifications_enabled").and_then(|v| v.as_bool()).unwrap_or(true);
     let language = req.data.get("language").and_then(|v| v.as_str()).unwrap_or("en");
 
-    let prefs = doc! {
+    let prefs = bson_doc! {
         "theme": theme,
         "notifications_enabled": notifications_enabled,
         "language": language
     };
 
     match prefs_coll.update_one(
-        doc! { "userId": user_id },
-        doc! { "$set": prefs }
+        bson_doc! { "userId": user_id },
+        bson_doc! { "$set": prefs }
     )
     .upsert(true)
     .await {

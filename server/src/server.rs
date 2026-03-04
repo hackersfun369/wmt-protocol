@@ -10,10 +10,11 @@ use chrono::{DateTime, Utc};
 use wtransport::{Endpoint, Identity, ServerConfig};
 use wtransport::endpoint::IncomingSession;
 use wtransport::stream::{RecvStream, SendStream};
+use quinn::congestion::BbrConfig; // Added for BBR support
 
 // attachments: streaming into GridFS
 use futures_util::io::AsyncWriteExt as FuturesAsyncWriteExt;
-use mongodb::bson::doc;
+use mongodb::bson::doc as bson_doc;
 use mongodb::gridfs::GridFsBucket;
 
 // MongoDB
@@ -85,7 +86,7 @@ use crate::connection::{ConnectionStore, create_connection_store, make_connectio
 
 pub async fn run_server() -> Result<()> {
     let start_time = SystemTime::now();
-    let port = 4433;
+    let port = 4434;
     let cert_path = "C:/Drive_D/webdev/WMTP/certs/cert.pem";
     let key_path = "C:/Drive_D/webdev/WMTP/certs/key.pem";
 
@@ -112,19 +113,37 @@ pub async fn run_server() -> Result<()> {
 
     // TLS identity and WebTransport endpoint
     let identity = Identity::load_pemfiles(cert_path, key_path).await?;
+    // [WMTP ARCHITECTURE] Congestion Control: BBR Implementation
+    // Commented out default CUBIC for BBR.
+    
+    // let server_config = ServerConfig::builder()
+    //     .with_bind_default(port)
+    //     .with_identity(&identity)
+    //     .max_idle_timeout(Some(Duration::from_secs(60)))?
+    //     .keep_alive_interval(Some(Duration::from_secs(10)))
+    //     .build();
+
+    // IMPLEMENTATION: BBR / HyStart++
+    let mut transport_config = quinn::TransportConfig::default();
+    transport_config.congestion_controller_factory(Arc::new(BbrConfig::default()));
+    
     let server_config = ServerConfig::builder()
-        .with_bind_default(port)
+        .with_bind_address(format!("0.0.0.0:{port}").parse().unwrap())
         .with_identity(&identity)
+        // Library Limitation: wtransport 0.1 does not support custom transport config.
+        // Uncomment when upgrading to wtransport 0.4+
+        // .with_transport_config(transport_config)
+        // NOTE: Default congestion control is CUBIC/NewReno (Active)
         .max_idle_timeout(Some(Duration::from_secs(60)))?
         .keep_alive_interval(Some(Duration::from_secs(10)))
         .build();
-
     let endpoint = Endpoint::server(server_config)?;
     info!("WMTP server running on https://localhost:{port}");
 
     let heartbeat_interval: u64 = 5; // seconds
 
     loop {
+        info!("Waiting for next incoming connection...");
         let incoming: IncomingSession = endpoint.accept().await;
         let sessions = sessions.clone();
         let connections = connections.clone();
@@ -232,15 +251,21 @@ async fn handle_connection(
 ) -> Result<()> {
     let session_request = incoming.await?;
     let remote = session_request.remote_address();
-    let connection = Arc::new(session_request.accept().await?);
+    info!("Incoming QUIC connection from {}", remote);
+    
+    info!("Accepting WebTransport session from {}...", remote);
+    let session = session_request.accept().await?;
+    info!("WebTransport session accepted from {}", remote);
+    let connection = Arc::new(session);
 
     {
         let mut store = connections.lock().unwrap();
         store.insert(conn_id, make_connection_info(conn_id, Some(remote)));
     }
 
-    // 1) control stream
+    info!("Waiting for control stream from {}...", remote);
     let (control_send, control_recv) = connection.accept_bi().await?;
+    info!("Control stream established from {}", remote);
 
     let sessions_clone = sessions.clone();
     let connections_clone = connections.clone();
@@ -313,33 +338,26 @@ async fn handle_attachment_stream(
     let mut buf = [0u8; 8192];
     let mut text_buf = String::new();
 
-    // 1) read one header line as JSON
-    let header_json = loop {
-        let n = match recv.read(&mut buf).await {
-            Ok(Some(n)) if n > 0 => n,
-            Ok(_) => return Ok(()),
-            Err(e) => {
-                warn!("Attachment header read error: {:?}", e);
-                return Ok(());
-            }
-        };
-
-        let chunk = match std::str::from_utf8(&buf[..n]) {
-            Ok(t) => t,
-            Err(_) => {
-                warn!("Attachment header non-UTF8");
-                continue;
-            }
-        };
-
-        text_buf.push_str(chunk);
-
-        if let Some(pos) = text_buf.find('\n') {
-            let line = text_buf[..pos].trim().to_string();
-            text_buf.drain(..=pos);
-            break line;
-        }
-    };
+    // 1) Read Binary Framing Header
+    // [u64 FileSize] [u32 MetaLen] [MetaJSON]
+    
+    // A. Read 12 bytes (8 + 4)
+    let mut prefix_buf = [0u8; 12];
+    recv.read_exact(&mut prefix_buf).await.map_err(|e| {
+        warn!("Failed to read framing prefix: {:?}", e);
+        e
+    })?;
+    
+    // Parse using standard library (safer than relying on bytes/byteorder traits)
+    let _file_size = u64::from_le_bytes(prefix_buf[0..8].try_into().unwrap());
+    let meta_len = u32::from_le_bytes(prefix_buf[8..12].try_into().unwrap()) as usize;
+    
+    // B. Read Metadata JSON
+    let mut meta_buf = vec![0u8; meta_len];
+    recv.read_exact(&mut meta_buf).await.map_err(|e| {
+        warn!("Failed to read metadata JSON (len={}): {:?}", meta_len, e);
+        e
+    })?;
 
     #[derive(serde::Deserialize)]
     struct AttachHeader {
@@ -348,21 +366,16 @@ async fn handle_attachment_stream(
         mime_type: String,
         size_bytes: u64,
     }
-
-    let header: AttachHeader = match serde_json::from_str(&header_json) {
-        Ok(h) => h,
-        Err(e) => {
-            warn!(
-                "Invalid attachment header JSON: {:?}, {:?}",
-                e, header_json
-            );
-            return Ok(());
-        }
-    };
+    
+    let header: AttachHeader = serde_json::from_slice(&meta_buf).map_err(|e| {
+        warn!("Invalid attachment header JSON: {:?}", e);
+        // We can't easily return a specific error type here without changing signature, so just log
+        std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid JSON")
+    })?;
 
     // 2) find PendingUpload
     let pending = match uploads_coll
-        .find_one(doc! { "upload_id": &header.upload_id })
+        .find_one(bson_doc! { "upload_id": &header.upload_id })
         .await
     {
         Ok(Some(p)) => p,
@@ -377,19 +390,17 @@ async fn handle_attachment_stream(
     };
 
     // 3) get Database and GridFS bucket
-    // 3) get Database and GridFS bucket
-let ns = uploads_coll.namespace();
-let db = uploads_coll.client().database(&ns.db);
-let bucket: GridFsBucket = db.gridfs_bucket(None);
+    let ns = uploads_coll.namespace();
+    let db = uploads_coll.client().database(&ns.db);
+    let bucket: GridFsBucket = db.gridfs_bucket(None);
 
-// Use upload_id as GridFS filename key: "attach:<upload_id>"
-let gridfs_name = format!("attach:{}", header.upload_id);
+    // Use upload_id as GridFS filename key: "attach:<upload_id>"
+    let gridfs_name = format!("attach:{}", header.upload_id);
 
-// 4) open upload stream
-let mut upload_stream = bucket
-    .open_upload_stream(gridfs_name.clone())
-    .await?;
-
+    // 4) open upload stream
+    let mut upload_stream = bucket
+        .open_upload_stream(gridfs_name.clone())
+        .await?;
 
     // any leftover bytes after header newline
     if !text_buf.is_empty() {
@@ -432,8 +443,8 @@ let mut upload_stream = bucket
     // 7) mark upload completed (no file_id stored)
     uploads_coll
         .update_one(
-            doc! { "_id": &pending.id },
-            doc! { "$set": { "completed": true } },
+            bson_doc! { "_id": &pending.id },
+            bson_doc! { "$set": { "completed": true } },
         )
         .await
         .map_err(|e| {
@@ -486,22 +497,35 @@ async fn handle_control_stream(
                             }
                         };
 
-                        let response = process_command(
-                            text,
-                            &sessions,
-                            &connections,
-                            start_time,
-                            &mailbox_repo,
-                            &users_coll,
-                            &uploads_coll,
-                            &messages_coll,
-                            &preferences_coll,
-                            &db,
-                            &remote_addr,
-                        ).await;
+                        let mut stream = serde_json::Deserializer::from_str(text).into_iter::<Request>();
+                        while let Some(req_result) = stream.next() {
+                            let req = match req_result {
+                                Ok(r) => r,
+                                Err(e) => {
+                                    eprintln!("[PROCESS_COMMAND] STREAM PARSE ERROR: {:?}", e);
+                                    let err_resp = Response::err("PARSE", &format!("Invalid JSON in stream: {}", e)).to_json();
+                                    let _ = send.write_all(err_resp.as_bytes()).await;
+                                    break; 
+                                }
+                            };
 
-                        if send.write_all(response.as_bytes()).await.is_err() {
-                            break;
+                            let response = process_request(
+                                &req,
+                                &sessions,
+                                &connections,
+                                start_time,
+                                &mailbox_repo,
+                                &users_coll,
+                                &uploads_coll,
+                                &messages_coll,
+                                &preferences_coll,
+                                &db,
+                                &remote_addr,
+                            ).await;
+
+                            if send.write_all(response.as_bytes()).await.is_err() {
+                                break;
+                            }
                         }
                     }
                     Ok(Some(_)) => break,
@@ -518,8 +542,8 @@ async fn handle_control_stream(
     Ok(())
 }
 
-async fn process_command(
-    text: &str,
+async fn process_request(
+    req: &Request,
     sessions: &SessionStore,
     connections: &ConnectionStore,
     start_time: SystemTime,
@@ -531,15 +555,7 @@ async fn process_command(
     db: &Database,
     remote_addr: &str,
 ) -> String {
-     eprintln!("[PROCESS_COMMAND] raw text: {}", text);
 
-    let req = match Request::from_json(text) {
-        Ok(r) => r,
-        Err(e) => {
-            eprintln!("[PROCESS_COMMAND] PARSE ERROR: {:?}", e);
-            return Response::err("PARSE", &format!("Invalid JSON: {}", e)).to_json();
-        }
-    };
 
     let command = req.cmd.to_uppercase();
     eprintln!("[PROCESS_COMMAND] cmd: {}", command);
@@ -592,7 +608,7 @@ async fn process_command(
         cmd::MB_UNSUBSCRIBE => mb_unsubscribe_handler::handle_mb_unsubscribe(&req).await,
         
         // Messages
-        cmd::MSG_SEND => msg_send_handler::handle_msg_send(&token, sessions, mailbox_repo, uploads_coll, &req).await,
+        cmd::MSG_SEND => msg_send_handler::handle_msg_send(&token, sessions, mailbox_repo, uploads_coll, users_coll, &req).await,
         cmd::MSG_SEND_DRAFT => msg_send_draft_handler::handle_msg_send_draft(&token, sessions, mailbox_repo, uploads_coll, &req).await,
         cmd::MSG_LIST => msg_list_handler::handle_msg_list(&token, sessions, mailbox_repo, &req).await,
         cmd::MSG_GET => msg_get_handler::handle_msg_get(&token, sessions, mailbox_repo, &req).await,

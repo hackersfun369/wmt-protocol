@@ -1,9 +1,9 @@
 use crate::comm::{Request, Response};
 use crate::session::{SessionStore, WmtpSession};
-use crate::token::token_from_email;
+use crate::token::{token_from_email, issue_jwt};
 use crate::commands::mailbox::db::MailboxRepository;
 
-use mongodb::bson::{doc, oid::ObjectId, DateTime as BsonDateTime};
+use mongodb::bson::{doc as bson_doc, oid::ObjectId, DateTime as BsonDateTime};
 use mongodb::Collection;
 use serde::{Deserialize, Serialize};
 
@@ -42,7 +42,7 @@ pub async fn handle_auth(
 
     // 3) Find or create user in Mongo
     let user_id = match users_coll
-        .find_one(doc! { "email": &email })
+        .find_one(bson_doc! { "email": &email })
         .await
     {
         Ok(Some(user)) => user.id,
@@ -92,10 +92,14 @@ pub async fn handle_auth(
             });
     }
 
-    // 6) Response
+    // 6) Issue a JWT wrapping the session token
+    let jwt = issue_jwt(&email, &token);
+
+    // 7) Response — return JWT as session_token
     Response::ok("AUTH_OK")
-        .with_token(token)
+        .with_token(jwt)
         .with_auth(true)
+        .with_email(Some(email))
         .with_msg("Authentication successful")
         .to_json()
 }

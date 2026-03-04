@@ -1,0 +1,370 @@
+﻿cargo :    Compiling wmtp-server v0.1.0 
+(C:\Drive_D\webdev\WMTP\server)
+At line:1 char:1
++ cargo build 2>&1 | Out-File -FilePath 
+build_errors_2.txt -Encoding ut ...
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified 
+   : (   Compiling wm...ev\WMTP\server):S  
+  tring) [], RemoteException
+    + FullyQualifiedErrorId : NativeComman 
+   dError
+ 
+error[E0463]: can't find crate for 
+`mongodb`
+  --> src\server.rs:17:5
+   |
+17 | use mongodb::bson::doc as bson_doc;
+   |     ^^^^^^^ can't find crate
+
+error: cannot find macro `bson_bson_doc` 
+in this scope
+   --> src\commands\mailbox\db.rs:100:23
+    |
+100 |             .find_one(bson_bson_doc! 
+{ "code": code })
+    |                       ^^^^^^^^^^^^^
+
+error: cannot find macro `doc` in this 
+scope
+  --> src\commands\profile\profile_get\hand
+ler.rs:54:19
+   |
+54 |         .find_one(doc! { "_id": 
+&user_id })
+   |                   ^^^
+   |
+   = note: `doc` is in scope, but it is an 
+attribute: `#[doc]`
+
+error: cannot find macro `doc` in this 
+scope
+  --> src\commands\profile\profile_set\hand
+ler.rs:61:13
+   |
+61 |             doc! { "_id": &user_id },
+   |             ^^^
+   |
+   = note: `doc` is in scope, but it is an 
+attribute: `#[doc]`
+
+error: cannot find macro `doc` in this 
+scope
+  --> src\commands\profile\profile_set\hand
+ler.rs:62:13
+   |
+62 |             doc! { "$set": set_doc },
+   |             ^^^
+   |
+   = note: `doc` is in scope, but it is an 
+attribute: `#[doc]`
+
+error: cannot find macro `doc` in this 
+scope
+  --> 
+src\commands\user\pref_get\handler.rs:34:31
+   |
+34 |     match prefs_coll.find_one(doc! { 
+"userId": user_id }).await {
+   |                               ^^^
+   |
+   = note: `doc` is in scope, but it is an 
+attribute: `#[doc]`
+
+error: cannot find macro `doc` in this 
+scope
+  --> 
+src\commands\user\pref_set\handler.rs:30:17
+   |
+30 |     let prefs = doc! {
+   |                 ^^^
+   |
+   = note: `doc` is in scope, but it is an 
+attribute: `#[doc]`
+
+error: cannot find macro `doc` in this 
+scope
+  --> 
+src\commands\user\pref_set\handler.rs:37:9
+   |
+37 |         doc! { "userId": user_id },
+   |         ^^^
+   |
+   = note: `doc` is in scope, but it is an 
+attribute: `#[doc]`
+
+error: cannot find macro `doc` in this 
+scope
+  --> 
+src\commands\user\pref_set\handler.rs:38:9
+   |
+38 |         doc! { "$set": prefs }
+   |         ^^^
+   |
+   = note: `doc` is in scope, but it is an 
+attribute: `#[doc]`
+
+error: cannot find macro `doc` in this 
+scope
+  --> src\commands\attachment\attach_get\ha
+ndler.rs:67:19
+   |
+67 |         .find_one(doc! { "user_id": 
+&user_id, "upload_id": attachment_id })
+   |                   ^^^
+   |
+   = note: `doc` is in scope, but it is an 
+attribute: `#[doc]`
+
+warning: value assigned to `result` is 
+never read
+  --> src\commands\session\session_resume_s
+uspended\handler.rs:15:13
+   |
+15 |     let mut result = None;
+   |             ^^^^^^
+   |
+   = help: maybe it is overwritten before 
+being read?
+   = note: `#[warn(unused_assignments)]` 
+(part of `#[warn(unused)]`) on by default
+
+warning: this function depends on never 
+type fallback being `()`
+  --> src\commands\mailbox\mb_purge_trash\h
+andler.rs:6:1
+   |
+ 6 | / pub async fn handle_mb_purge_trash(
+ 7 | |     req: &Request,
+ 8 | |     sessions: &SessionStore,
+ 9 | |     mailbox_repo: 
+&MailboxRepository,
+10 | | ) -> String {
+   | |___________^
+   |
+   = warning: this was previously accepted 
+by the compiler but is being phased out; 
+it will become a hard error in Rust 2024 
+and in a future release in all editions!
+   = note: for more information, see <https
+://doc.rust-lang.org/edition-guide/rust-202
+4/never-type-fallback.html>
+   = help: specify the types explicitly
+note: in edition 2024, the requirement `!: 
+Serialize` will fail
+  --> src\commands\mailbox\mb_purge_trash\h
+andler.rs:46:16
+   |
+46 |     let data = serde_json::json!({ 
+"deleted": deleted });
+   |                
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: `#[warn(dependency_on_unit_never
+_type_fallback)]` (part of 
+`#[warn(rust_2024_compatibility)]`) on by 
+default
+   = note: this warning originates in the 
+macro `$crate::json_internal` which comes 
+from the expansion of the macro 
+`serde_json::json` (in Nightly builds, run 
+with -Z macro-backtrace for more info)
+help: use `()` annotations to avoid 
+fallback changes
+   |
+38 |     let deleted: () = match mailbox_re
+po.purge_trash_for_user(&user_id).await {
+   |                ++++
+
+warning: this function depends on never 
+type fallback being `()`
+  --> src\commands\message\msg_move\handler
+.rs:7:1
+   |
+ 7 | / pub async fn handle_msg_move(
+ 8 | |     token: &str,
+ 9 | |     sessions: &SessionStore,
+10 | |     mailbox_repo: 
+&MailboxRepository,
+11 | |     req: &Request,
+12 | | ) -> String {
+   | |___________^
+   |
+   = warning: this was previously accepted 
+by the compiler but is being phased out; 
+it will become a hard error in Rust 2024 
+and in a future release in all editions!
+   = note: for more information, see <https
+://doc.rust-lang.org/edition-guide/rust-202
+4/never-type-fallback.html>
+   = help: specify the types explicitly
+note: in edition 2024, the requirement `!: 
+Serialize` will fail
+  --> src\commands\message\msg_move\handler
+.rs:74:16
+   |
+74 |       let data = serde_json::json!({
+   |  ________________^
+75 | |         "id": id_str,
+76 | |         "from_folder": from_folder,
+77 | |         "to_folder": target_folder,
+78 | |     });
+   | |______^
+   = note: this warning originates in the 
+macro `$crate::json_internal` which comes 
+from the expansion of the macro 
+`serde_json::json` (in Nightly builds, run 
+with -Z macro-backtrace for more info)
+help: use `()` annotations to avoid 
+fallback changes
+   |
+69 |     let from_folder: () = match 
+from_folder_opt {
+   |                    ++++
+
+warning: this function depends on never 
+type fallback being `()`
+  --> src\commands\message\msg_delete\handl
+er.rs:7:1
+   |
+ 7 | / pub async fn handle_msg_delete(
+ 8 | |     token: &str,
+ 9 | |     sessions: &SessionStore,
+10 | |     mailbox_repo: 
+&MailboxRepository,
+11 | |     req: &Request,
+12 | | ) -> String {
+   | |___________^
+   |
+   = warning: this was previously accepted 
+by the compiler but is being phased out; 
+it will become a hard error in Rust 2024 
+and in a future release in all editions!
+   = note: for more information, see <https
+://doc.rust-lang.org/edition-guide/rust-202
+4/never-type-fallback.html>
+   = help: specify the types explicitly
+note: in edition 2024, the requirement `!: 
+Serialize` will fail
+  --> src\commands\message\msg_delete\handl
+er.rs:66:16
+   |
+66 |       let data = serde_json::json!({
+   |  ________________^
+67 | |         "id": id_str,
+68 | |         "from_folder": from_folder,
+69 | |         "to_folder": "BIN",
+70 | |     });
+   | |______^
+   = note: this warning originates in the 
+macro `$crate::json_internal` which comes 
+from the expansion of the macro 
+`serde_json::json` (in Nightly builds, run 
+with -Z macro-backtrace for more info)
+help: use `()` annotations to avoid 
+fallback changes
+   |
+61 |     let from_folder: () = match 
+from_folder_opt {
+   |                    ++++
+
+warning: this function depends on never 
+type fallback being `()`
+  --> src\commands\message\msg_undelete\han
+dler.rs:7:1
+   |
+ 7 | / pub async fn handle_msg_undelete(
+ 8 | |     token: &str,
+ 9 | |     sessions: &SessionStore,
+10 | |     mailbox_repo: 
+&MailboxRepository,
+11 | |     req: &Request,
+12 | | ) -> String {
+   | |___________^
+   |
+   = warning: this was previously accepted 
+by the compiler but is being phased out; 
+it will become a hard error in Rust 2024 
+and in a future release in all editions!
+   = note: for more information, see <https
+://doc.rust-lang.org/edition-guide/rust-202
+4/never-type-fallback.html>
+   = help: specify the types explicitly
+note: in edition 2024, the requirement `!: 
+Serialize` will fail
+  --> src\commands\message\msg_undelete\han
+dler.rs:72:16
+   |
+72 |       let data = serde_json::json!({
+   |  ________________^
+73 | |         "id": id_str,
+74 | |         "from_folder": from_folder,
+75 | |         "to_folder": target_folder,
+76 | |     });
+   | |______^
+   = note: this warning originates in the 
+macro `$crate::json_internal` which comes 
+from the expansion of the macro 
+`serde_json::json` (in Nightly builds, run 
+with -Z macro-backtrace for more info)
+help: use `()` annotations to avoid 
+fallback changes
+   |
+67 |     let from_folder: () = match 
+from_folder_opt {
+   |                    ++++
+
+warning: this function depends on never 
+type fallback being `()`
+   --> src\commands\message\msg_bulk_action
+\handler.rs:7:1
+    |
+  7 | / pub async fn 
+handle_msg_bulk_action(
+  8 | |     token: &str,
+  9 | |     sessions: &SessionStore,
+ 10 | |     mailbox_repo: 
+&MailboxRepository,
+ 11 | |     req: &Request,
+ 12 | | ) -> String {
+    | |___________^
+    |
+    = warning: this was previously 
+accepted by the compiler but is being 
+phased out; it will become a hard error in 
+Rust 2024 and in a future release in all 
+editions!
+    = note: for more information, see <http
+s://doc.rust-lang.org/edition-guide/rust-20
+24/never-type-fallback.html>
+    = help: specify the types explicitly
+note: in edition 2024, the requirement `!: 
+Serialize` will fail
+   --> src\commands\message\msg_bulk_action
+\handler.rs:134:16
+    |
+134 |       let data = serde_json::json!({
+    |  ________________^
+135 | |         "action": action,
+136 | |         "total_ids": total_ids,
+137 | |         "affected": affected,
+138 | |     });
+    | |______^
+    = note: this warning originates in the 
+macro `$crate::json_internal` which comes 
+from the expansion of the macro 
+`serde_json::json` (in Nightly builds, run 
+with -Z macro-backtrace for more info)
+help: use `()` annotations to avoid 
+fallback changes
+    |
+ 65 |     let affected: () = match 
+action.as_str() {
+    |                 ++++
+
+For more information about this error, try 
+`rustc --explain E0463`.
+warning: `wmtp-server` (lib) generated 6 
+warnings
+error: could not compile `wmtp-server` 
+(lib) due to 10 previous errors; 11 
+warnings emitted

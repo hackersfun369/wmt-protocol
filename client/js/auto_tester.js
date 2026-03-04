@@ -1,5 +1,5 @@
 
-const CERT_HASH = "9kDUV0kAxsCBObFdiULtY3w5b0xcp8l6A+uF7Ds9yFc=";
+const CERT_HASH = "gnTZFqw83Zw0DaWn8LmkosVoM9pVD4+uF7Ds9yFc=";
 const SERVER_URL = "https://localhost:4433";
 const USER_EMAIL = "test@auto.com";
 

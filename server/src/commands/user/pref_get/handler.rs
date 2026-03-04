@@ -1,7 +1,7 @@
 use crate::comm::{Request, Response};
 use crate::session::SessionStore;
 use mongodb::Collection;
-use mongodb::bson::doc;
+use mongodb::bson::doc as bson_doc;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -31,7 +31,7 @@ pub async fn handle_pref_get(
         }
     };
 
-    match prefs_coll.find_one(doc! { "userId": user_id }).await {
+    match prefs_coll.find_one(bson_doc! { "userId": user_id }).await {
         Ok(Some(prefs)) => Response::ok("PREF_GET_OK")
             .with_data(serde_json::to_value(prefs).unwrap_or_default())
             .to_json(),

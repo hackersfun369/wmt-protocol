@@ -7,7 +7,14 @@ const certsDir = path.join(__dirname, 'certs');
 const certPath = path.join(certsDir, 'cert.pem');
 const keyPath = path.join(certsDir, 'key.pem');
 const confPath = path.join(certsDir, 'localhost.conf');
-const uiJsPath = path.join(__dirname, 'client', 'js', 'ui.js');
+
+const FILES_TO_UPDATE = [
+    {
+        path: path.join(__dirname, 'client', 'js', 'transport.js'),
+        regex: /this\.certHash = ('[^']+'|"[^"]+"|null);/g,
+        template: (hash) => `this.certHash = '${hash}';`
+    }
+];
 
 console.log('🔄 Starting Smart Certificate Setup...');
 
@@ -18,7 +25,6 @@ try {
 
     // 2. Generate Self-Signed Certificate with SANs using Config
     console.log('📜 Generating Certificate (Valid 10 days, with SANs)...');
-    // Note: -days 10 is critical for WebTransport self-signed hash verification
     execSync(`openssl req -new -x509 -key "${keyPath}" -out "${certPath}" -days 10 -config "${confPath}"`);
 
     // 3. Calculate SHA-256 Hash
@@ -44,21 +50,24 @@ try {
 
     console.log(`✨ New Hash: ${hash}`);
 
-    // 4. Update Client Code
-    console.log('📝 Updating client/js/ui.js...');
-    if (fs.existsSync(uiJsPath)) {
-        let content = fs.readFileSync(uiJsPath, 'utf8');
-        const regex = /wmtpTransport\.setCertificateHash\(['"][^'"]+['"]\);/;
-        if (regex.test(content)) {
-            const newContent = content.replace(regex, `wmtpTransport.setCertificateHash('${hash}');`);
-            fs.writeFileSync(uiJsPath, newContent, 'utf8');
-            console.log('✅ Client updated successfully.');
+    // 4. Update Client Files
+    FILES_TO_UPDATE.forEach(file => {
+        const relativePath = path.relative(__dirname, file.path);
+        console.log(`📝 Updating ${relativePath}...`);
+
+        if (fs.existsSync(file.path)) {
+            let content = fs.readFileSync(file.path, 'utf8');
+            if (file.regex.test(content)) {
+                const newContent = content.replace(file.regex, file.template(hash));
+                fs.writeFileSync(file.path, newContent, 'utf8');
+                console.log(`✅ ${relativePath} updated successfully.`);
+            } else {
+                console.warn(`⚠️ Could not find pattern in ${relativePath}`);
+            }
         } else {
-            console.warn('⚠️ Could not find setCertificateHash in ui.js');
+            console.warn(`⚠️ File not found: ${relativePath}`);
         }
-    } else {
-        console.error('❌ client/js/ui.js not found!');
-    }
+    });
 
     console.log('\n🎉 Setup Complete!');
     console.log('👉 IMPORTANT: Restart your Rust server now to apply changes.');

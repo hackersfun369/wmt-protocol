@@ -1,4 +1,4 @@
-use mongodb::bson::{doc, oid::ObjectId, DateTime as BsonDateTime};
+use mongodb::bson::{doc as bson_doc, oid::ObjectId, DateTime as BsonDateTime};
 use mongodb::Collection;
 use serde::{Deserialize, Serialize};
 

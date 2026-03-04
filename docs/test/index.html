@@ -1,0 +1,2781 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMTP API Reference | Full Protocol Specification</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.3);
+            --bg: #0b0f1a;
+            --sidebar-bg: #111827;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --code-bg: #000000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        aside {
+            width: 280px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .logo-area {
+            margin-bottom: 2.5rem;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo span {
+            color: var(--text);
+        }
+
+        .nav-category {
+            margin-bottom: 2rem;
+        }
+
+        .nav-category-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+            border-left: 2px solid var(--primary);
+            padding-left: 0.5rem;
+        }
+
+        .nav-links {
+            list-style: none;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 0.35rem 0;
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nav-link:hover {
+            color: var(--primary);
+            padding-left: 4px;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            padding: 4rem 10% 4rem 5%;
+            max-width: 1200px;
+        }
+
+        .hero {
+            margin-bottom: 4rem;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            letter-spacing: -0.04em;
+        }
+
+        .hero-desc {
+            font-size: 1.25rem;
+            color: var(--text-dim);
+            max-width: 800px;
+        }
+
+        .section-header {
+            margin: 6rem 0 3rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+            position: relative;
+        }
+
+        .section-header h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100px;
+            height: 1px;
+            background: var(--primary);
+        }
+
+        /* Command Card */
+        .command {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 3rem;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .command:target {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .command-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .command-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .desc {
+            font-size: 1rem;
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+        }
+
+        .field-section {
+            margin-bottom: 2rem;
+        }
+
+        .field-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+
+        .field-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .field-table th {
+            background: rgba(255, 255, 255, 0.05);
+            text-align: left;
+            padding: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .field-table td {
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        .req {
+            color: var(--error);
+            font-weight: 700;
+        }
+
+        .opt {
+            color: var(--text-dim);
+        }
+
+        .code-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .code-block {
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+        }
+
+        .code-header {
+            background: #2d3748;
+            padding: 0.5rem 1rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        pre {
+            padding: 1.25rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            overflow-x: auto;
+        }
+
+        footer {
+            text-align: center;
+            padding: 4rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim);
+            margin-top: 4rem;
+        }
+
+        /* Mobile Toggle */
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        @media (max-width: 1024px) {
+            .mobile-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .layout {
+                flex-direction: column;
+            }
+
+            aside {
+                position: fixed;
+                left: -280px;
+                width: 280px;
+                z-index: 999;
+                transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+            }
+
+            aside.active {
+                left: 0;
+            }
+
+            main {
+                padding: 4rem 1.5rem 2rem;
+                max-width: 100%;
+            }
+
+            h1 {
+                font-size: 2.25rem;
+            }
+
+            .hero-desc {
+                font-size: 1.1rem;
+            }
+
+            .section-header {
+                margin: 4rem 0 2rem;
+            }
+
+            .command {
+                padding: 1.5rem;
+            }
+
+            .command-name {
+                font-size: 1.25rem;
+            }
+
+            .code-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .field-section {
+                overflow-x: auto;
+            }
+
+            .field-table {
+                min-width: 600px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .hero {
+                margin-bottom: 2rem;
+            }
+
+            .command-meta {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="mobile-toggle" id="menuToggle" aria-label="Toggle Menu">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+    </button>
+
+    <div class="layout">
+        <aside>
+            <div class="logo-area">
+                <div class="logo">WMTP <span>DOCS</span></div>
+            </div>
+
+            <nav>
+                <div class="nav-category">
+                    <div class="nav-category-title">Session</div>
+                    <ul class="nav-links">
+                        <li><a href="#INIT" class="nav-link">1. INIT</a></li>
+                        <li><a href="#AUTH" class="nav-link">2. AUTH</a></li>
+                        <li><a href="#RESUME" class="nav-link">3. RESUME</a></li>
+                        <li><a href="#LOGOUT" class="nav-link">4. LOGOUT</a></li>
+                        <li><a href="#SESSION_INFO" class="nav-link">5. SESSION_INFO</a></li>
+                        <li><a href="#SESSION_LIST" class="nav-link">6. SESSION_LIST</a></li>
+                        <li><a href="#SESSION_KILL" class="nav-link">7. SESSION_KILL</a></li>
+                        <li><a href="#SESSION_SUSPEND" class="nav-link">8. SESSION_SUSPEND</a></li>
+                        <li><a href="#SESSION_RESUME_SUSPENDED" class="nav-link">9. SESSION_RESUME_SUSPENDED</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-category">
+                    <div class="nav-category-title">Health</div>
+                    <ul class="nav-links">
+                        <li><a href="#PING" class="nav-link">10. PING</a></li>
+                        <li><a href="#PONG" class="nav-link">11. PONG</a></li>
+                        <li><a href="#HB" class="nav-link">12. HB</a></li>
+                        <li><a href="#UPTIME" class="nav-link">13. UPTIME</a></li>
+                        <li><a href="#LATENCY_PING" class="nav-link">14. LATENCY_PING</a></li>
+                        <li><a href="#CONNECTION_INFO" class="nav-link">15. CONNECTION_INFO</a></li>
+                        <li><a href="#RATE_LIMIT_INFO" class="nav-link">16. RATE_LIMIT_INFO</a></li>
+                        <li><a href="#DEBUG_ECHO" class="nav-link">17. DEBUG_ECHO</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-category">
+                    <div class="nav-category-title">Info & Admin</div>
+                    <ul class="nav-links">
+                        <li><a href="#INFO" class="nav-link">18. INFO</a></li>
+                        <li><a href="#STATUS" class="nav-link">19. STATUS</a></li>
+                        <li><a href="#CAPABILITIES" class="nav-link">20. CAPABILITIES</a></li>
+                        <li><a href="#TIME" class="nav-link">21. TIME</a></li>
+                        <li><a href="#VERSION_CHECK" class="nav-link">22. VERSION_CHECK</a></li>
+                        <li><a href="#CONFIG_PUBLIC_GET" class="nav-link">23. CONFIG_PUBLIC_GET</a></li>
+                        <li><a href="#CONNECTION_LIST" class="nav-link">24. CONNECTION_LIST</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-category">
+                    <div class="nav-category-title">Mailbox</div>
+                    <ul class="nav-links">
+                        <li><a href="#MB_LIST" class="nav-link">25. MB_LIST</a></li>
+                        <li><a href="#MAIL_LIST" class="nav-link">26. MAIL_LIST</a></li>
+                        <li><a href="#MB_CREATE" class="nav-link">27. MB_CREATE</a></li>
+                        <li><a href="#MB_RENAME" class="nav-link">28. MB_RENAME</a></li>
+                        <li><a href="#MB_DELETE" class="nav-link">29. MB_DELETE</a></li>
+                        <li><a href="#MB_INFO" class="nav-link">30. MB_INFO</a></li>
+                        <li><a href="#MB_PURGE_TRASH" class="nav-link">31. MB_PURGE_TRASH</a></li>
+                        <li><a href="#MB_SUBSCRIBE" class="nav-link">32. MB_SUBSCRIBE</a></li>
+                        <li><a href="#MB_UNSUBSCRIBE" class="nav-link">33. MB_UNSUBSCRIBE</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-category">
+                    <div class="nav-category-title">Messages</div>
+                    <ul class="nav-links">
+                        <li><a href="#MSG_SEND" class="nav-link">34. MSG_SEND</a></li>
+                        <li><a href="#MSG_SEND_DRAFT" class="nav-link">35. MSG_SEND_DRAFT</a></li>
+                        <li><a href="#MSG_LIST" class="nav-link">36. MSG_LIST</a></li>
+                        <li><a href="#MSG_GET" class="nav-link">37. MSG_GET</a></li>
+                        <li><a href="#MSG_HEADERS" class="nav-link">38. MSG_HEADERS</a></li>
+                        <li><a href="#MSG_THREAD" class="nav-link">39. MSG_THREAD</a></li>
+                        <li><a href="#MSG_MOVE" class="nav-link">40. MSG_MOVE</a></li>
+                        <li><a href="#MSG_COPY" class="nav-link">41. MSG_COPY</a></li>
+                        <li><a href="#MSG_DELETE" class="nav-link">42. MSG_DELETE</a></li>
+                        <li><a href="#MSG_EXPUNGE" class="nav-link">43. MSG_EXPUNGE</a></li>
+                        <li><a href="#MSG_UNDELETE" class="nav-link">44. MSG_UNDELETE</a></li>
+                        <li><a href="#MSG_FLAG_SET" class="nav-link">45. MSG_FLAG_SET</a></li>
+                        <li><a href="#MSG_FLAG_CLEAR" class="nav-link">46. MSG_FLAG_CLEAR</a></li>
+                        <li><a href="#MSG_BULK_ACTION" class="nav-link">47. MSG_BULK_ACTION</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-category">
+                    <div class="nav-category-title">Search</div>
+                    <ul class="nav-links">
+                        <li><a href="#SEARCH" class="nav-link">48. SEARCH</a></li>
+                        <li><a href="#SEARCH_GLOBAL" class="nav-link">49. SEARCH_GLOBAL</a></li>
+                        <li><a href="#SEARCH_ADV" class="nav-link">50. SEARCH_ADV</a></li>
+                        <li><a href="#SEARCH_SUGGEST" class="nav-link">51. SEARCH_SUGGEST</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-category">
+                    <div class="nav-category-title">User & Profile</div>
+                    <ul class="nav-links">
+                        <li><a href="#PROFILE_GET" class="nav-link">52. PROFILE_GET</a></li>
+                        <li><a href="#PROFILE_SET" class="nav-link">53. PROFILE_SET</a></li>
+                        <li><a href="#PREF_GET" class="nav-link">54. PREF_GET</a></li>
+                        <li><a href="#PREF_SET" class="nav-link">55. PREF_SET</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-category">
+                    <div class="nav-category-title">Attachments</div>
+                    <ul class="nav-links">
+                        <li><a href="#ATTACH_UPLOAD_INIT" class="nav-link">56. ATTACH_UPLOAD_INIT</a></li>
+                        <li><a href="#ATTACH_GET" class="nav-link">57. ATTACH_GET</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main>
+            <div class="hero">
+                <h1>Full API Reference</h1>
+                <p class="hero-desc">Complete documentation for every command in the WebTransport Mail Transfer Protocol
+                    (WMTP). This reference covers all 57 authenticated and unauthenticated methods implemented in the
+                    v1.0 reference server.</p>
+            </div>
+
+            <!-- SESSION SECTION -->
+            <div class="section-header">
+                <h2>🔐 Session & Authentication</h2>
+            </div>
+
+            <!-- INIT -->
+            <div class="command" id="INIT">
+                <div class="command-meta">
+                    <span class="command-name">1. INIT</span>
+                    <span class="badge" style="background:rgba(99,102,241,0.2); color:var(--primary)">Initial</span>
+                </div>
+                <div class="desc">Initializes a new ephemeral session.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td colspan="4" style="text-align:center">No payload required</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "INIT" }</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AUTH -->
+            <div class="command" id="AUTH">
+                <div class="command-meta">
+                    <span class="command-name">2. AUTH</span>
+                    <span class="badge" style="background:rgba(16,185,129,0.2); color:var(--success)">Upgrade</span>
+                </div>
+                <div class="desc">Promotes an ephemeral session to an authenticated state using provided user
+                    credentials (email).</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>email</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>User email address</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "AUTH",
+  "data": {
+    "email": "test@auto.com"
+  }
+}</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "AUTH_OK",
+  "status": "OK",
+  "msg": "Authentication successful",
+  "session_token": "b4fb83e0ac10f0b9e24517f6b26666f2ab6a1ea1579861d2ebffb907a5eac391",
+  "auth": true
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESUME -->
+            <div class="command" id="RESUME">
+                <div class="command-meta">
+                    <span class="command-name">3. RESUME</span>
+                    <span class="badge" style="background:rgba(245,158,11,0.2); color:var(--warning)">State</span>
+                </div>
+                <div class="desc">Resumes a previous session using a permanent session token.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Permanent session token</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "RESUME", "data": { "token": "b4fb83e..." } }</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LOGOUT -->
+            <div class="command" id="LOGOUT">
+                <div class="command-meta"><span class="command-name">4. LOGOUT</span></div>
+                <div class="desc">Invalidates the current session and clears server-side state.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "LOGOUT",
+  "data": {
+    "session_token": "b4fb83e..."
+  }
+}</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "LOGOUT",
+  "status": "OK",
+  "msg": "Logged out"
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SESSION_INFO -->
+            <div class="command" id="SESSION_INFO">
+                <div class="command-meta"><span class="command-name">5. SESSION_INFO</span></div>
+                <div class="desc">Details about the current session status, authentication level, and associated email.
+                </div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "SESSION_INFO",
+  "data": {
+    "session_token": "b4fb83e..."
+  }
+}</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "SESSION_INFO",
+  "status": "OK",
+  "msg": "Session info",
+  "session_token": "b4fb83e0ac10f0b9e24517f6b26666f2ab6a1ea1579861d2ebffb907a5eac391",
+  "auth": true,
+  "email": "test@auto.com"
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SESSION_LIST -->
+            <div class="command" id="SESSION_LIST">
+                <div class="command-meta"><span class="command-name">6. SESSION_LIST</span></div>
+                <div class="desc">Lists all active sessions linked to the authenticated user.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "SESSION_LIST", "data": { "session_token": "..." } }</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SESSION_KILL -->
+            <div class="command" id="SESSION_KILL">
+                <div class="command-meta"><span class="command-name">7. SESSION_KILL</span></div>
+                <div class="desc">Terminates a specific session by its token.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>target_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>The token to invalidate</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "SESSION_KILL", "data": { "session_token": "...", "target_token": "..." } }</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SESSION_SUSPEND -->
+            <div class="command" id="SESSION_SUSPEND">
+                <div class="command-meta"><span class="command-name">8. SESSION_SUSPEND</span></div>
+                <div class="desc">Temporarily pauses a session. The token remains valid but requires a specialized
+                    resume.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "SESSION_SUSPEND",
+  "data": { "session_token": "auth_..." }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SESSION_RESUME_SUSPENDED -->
+            <div class="command" id="SESSION_RESUME_SUSPENDED">
+                <div class="command-meta"><span class="command-name">9. SESSION_RESUME_SUSPENDED</span></div>
+                <div class="desc">Resumes a previously suspended session using the original token.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Current (or new) connection token</td>
+                        </tr>
+                        <tr>
+                            <td>token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>The suspended token to resume</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "SESSION_RESUME_SUSPENDED",
+  "data": {
+    "session_token": "eph_...",
+    "token": "auth_previously_suspended"
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HEALTH SECTION -->
+            <div class="section-header">
+                <h2>📡 Health & Diagnostics</h2>
+            </div>
+
+            <div class="command" id="PING">
+                <div class="command-meta"><span class="command-name">10. PING</span></div>
+                <div class="desc">Basic health check. Responds with PONG and server heartbeat data.</div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "PING" }</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "PONG",
+  "status": "OK",
+  "msg": "PONG",
+  "server_time": "2025-12-23T07:28:12.905+00:00",
+  "uptime_seconds": 420
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="PONG">
+                <div class="command-meta"><span class="command-name">11. PONG</span></div>
+                <div class="desc">Server response to a PING command. Contains timing and state info.</div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Example Payload (Server Push)</div>
+                        <pre>{
+  "cmd": "PONG",
+  "status": "OK",
+  "msg": "PONG",
+  "server_time": "2025-12-23T07:28:12.905Z",
+  "uptime_seconds": 420
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="HB">
+                <div class="command-meta"><span class="command-name">12. HB</span></div>
+                <div class="desc">Smallest possible packet for keep-alive maintenance.</div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "HB" }</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "HB",
+  "status": "OK",
+  "msg": "Heartbeat acknowledged"
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="UPTIME">
+                <div class="command-meta"><span class="command-name">13. UPTIME</span></div>
+                <div class="desc">Returns server uptime in seconds.</div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "UPTIME" }</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "UPTIME",
+  "status": "OK",
+  "uptime_seconds": 421
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="LATENCY_PING">
+                <div class="command-meta"><span class="command-name">14. LATENCY_PING</span></div>
+                <div class="desc">High-precision ping for calculating round-trip time.</div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "LATENCY_PING" }</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "LATENCY_PONG",
+  "status": "OK",
+  "msg": "Latency ping",
+  "server_time": "2025-12-23T07:28:13.225+00:00",
+  "uptime_seconds": 421
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="CONNECTION_INFO">
+                <div class="command-meta"><span class="command-name">15. CONNECTION_INFO</span></div>
+                <div class="desc">Technical details about the current WebTransport connection.</div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "CONNECTION_INFO",
+  "status": "OK",
+  "data": {
+    "remote_addr": "[::1]:58102",
+    "protocol": "WebTransport/QUIC",
+    "version": "1.0"
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="RATE_LIMIT_INFO">
+                <div class="command-meta"><span class="command-name">16. RATE_LIMIT_INFO</span></div>
+                <div class="desc">Current usage and remaining quota for the authenticated session.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "RATE_LIMIT_INFO", "data": { "session_token": "..." } }</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "RATE_LIMIT_INFO",
+  "status": "OK",
+  "data": {
+    "requests_remaining": 994,
+    "reset_seconds": 3600
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="DEBUG_ECHO">
+                <div class="command-meta"><span class="command-name">17. DEBUG_ECHO</span></div>
+                <div class="desc">Echoes back the request payload for debugging loopbacks.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Optional token</td>
+                        </tr>
+                        <tr>
+                            <td>...</td>
+                            <td>any</td>
+                            <td>NO</td>
+                            <td>Arbitrary data to echo</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "DEBUG_ECHO",
+  "data": { "foo": "bar" }
+}</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "DEBUG_ECHO",
+  "status": "OK",
+  "data": { "foo": "bar" }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INFO & ADMIN -->
+            <div class="section-header">
+                <h2>🛠️ Info & Administration</h2>
+            </div>
+
+            <div class="command" id="INFO">
+                <div class="command-meta"><span class="command-name">18. INFO</span></div>
+                <div class="desc">Public information about the server.</div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "INFO" }</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "INFO",
+  "status": "OK",
+  "msg": "WMTP Server v1.0.0"
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="STATUS">
+                <div class="command-meta"><span class="command-name">19. STATUS</span></div>
+                <div class="desc">Current system operational status.</div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "STATUS" }</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "STATUS",
+  "status": "OK",
+  "msg": "Running"
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="CAPABILITIES">
+                <div class="command-meta"><span class="command-name">20. CAPABILITIES</span></div>
+                <div class="desc">Lists supported protocol features and extensions.</div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "CAPABILITIES" }</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "CAPABILITIES",
+  "status": "OK",
+  "data": {
+    "commands": [
+      "INIT", "AUTH", "RESUME", "LOGOUT",
+      "PING", "PONG", "HB", "UPTIME",
+      "MB_LIST", "MSG_SEND", "MSG_GET",
+      "SEARCH", "PROFILE_GET", "..."
+    ],
+    "auth_methods": ["token", "oauth_future"],
+    "max_attachment_size": 104857600
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="TIME">
+                <div class="command-meta"><span class="command-name">21. TIME</span></div>
+                <div class="desc">Server's internal clock (ISO 8601).</div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "TIME" }</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "TIME",
+  "status": "OK",
+  "data": {
+    "utc": "2025-12-23T07:28:13.864+00:00",
+    "timestamp": 1766474893,
+    "timezone": "UTC"
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="VERSION_CHECK">
+                <div class="command-meta"><span class="command-name">22. VERSION_CHECK</span></div>
+                <div class="desc">Checks compatibility between client and server versions.</div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "VERSION_CHECK",
+  "data": { "client_version": "1.0.0" }
+}</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "VERSION_CHECK",
+  "status": "OK",
+  "data": {
+    "client_version": "unknown",
+    "server_version": "1.0.0",
+    "compatible": true
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="CONFIG_PUBLIC_GET">
+                <div class="command-meta"><span class="command-name">23. CONFIG_PUBLIC_GET</span></div>
+                <div class="desc">Retrieves public configuration like supported MIME types or size limits.</div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "CONFIG_PUBLIC_GET" }</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "CONFIG_PUBLIC_GET",
+  "status": "OK",
+  "data": {
+    "max_messages_per_page": 100,
+    "max_attachments": 10,
+    "rate_limits": { "auth": "5/min", "send": "100/hour" },
+    "environment": "development"
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="CONNECTION_LIST">
+                <div class="command-meta"><span class="command-name">24. CONNECTION_LIST</span></div>
+                <div class="desc">Lists all active underlying WebTransport connections (Admin only).</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Admin session token</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "CONNECTION_LIST", "data": { "session_token": "..." } }</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "CONNECTION_LIST",
+  "status": "OK",
+  "connections": [
+    { "id": 1, "addr": "[::1]:58102" }
+  ]
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAILBOX SECTION -->
+            <div class="section-header">
+                <h2>📂 Mailbox Operations</h2>
+            </div>
+
+            <div class="command" id="MB_LIST">
+                <div class="command-meta"><span class="command-name">25. MB_LIST</span></div>
+                <div class="desc">Lists all mailboxes (INBOX, SENT, and customs).</div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MB_LIST",
+  "data": { "session_token": "..." }
+}</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "MB_LIST",
+  "status": "OK",
+  "msg": "Mailbox folders",
+  "folders": [
+    { "code": "INBOX", "name": "Inbox", "unread": 0, "total": 0 },
+    { "code": "SENT", "name": "Sent", "unread": 0, "total": 3 },
+    { "code": "DRAFTS", "name": "Drafts", "unread": 0, "total": 0 },
+    { "code": "BIN", "name": "Bin", "unread": 0, "total": 0 },
+    { "code": "SPAM", "name": "Spam", "unread": 0, "total": 0 }
+  ]
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MAIL_LIST">
+                <div class="command-meta"><span class="command-name">26. MAIL_LIST</span></div>
+                <div class="desc">Atomic retrieval of message metadata in a folder.</div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MAIL_LIST",
+  "data": {
+    "session_token": "...",
+    "folder_code": "SENT",
+    "limit": 10
+  }
+}</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "MAIL_LIST",
+  "status": "OK",
+  "msg": "Messages",
+  "folder_code": "SENT",
+  "offset": 0,
+  "limit": 10,
+  "messages": [
+    {
+      "id": "694a448f802cffa5ed7cdf12",
+      "from": "test@auto.com",
+      "subject": "Test Message 2",
+      "snippet": "Another one",
+      "received_at": "2025-12-23T07:28:15.236+00:00",
+      "unread": false
+    }
+  ]
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MB_CREATE">
+                <div class="command-meta"><span class="command-name">27. MB_CREATE</span></div>
+                <div class="desc">Creates a folder. 'code' auto-generated if missing.</div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MB_CREATE",
+  "data": {
+    "session_token": "...",
+    "name": "AutoTestBox"
+  }
+}</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "MB_CREATE",
+  "status": "OK",
+  "msg": "Folder created successfully",
+  "data": {
+    "code": "AUTOTESTBOX",
+    "name": "AutoTestBox",
+    "id": "694a448e802cffa5ed7cdf10"
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MB_RENAME">
+                <div class="command-meta"><span class="command-name">28. MB_RENAME</span></div>
+                <div class="desc">Renames an existing custom folder.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>folder</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Folder code to rename</td>
+                        </tr>
+                        <tr>
+                            <td>new_name</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>New display name</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MB_RENAME",
+  "data": { "session_token": "...", "folder": "AUTOTESTBOX", "new_name": "RenamedBox" }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MB_DELETE">
+                <div class="command-meta"><span class="command-name">29. MB_DELETE</span></div>
+                <div class="desc">Deletes a custom folder.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>folder</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Folder code to delete</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "MB_DELETE", "data": { "session_token": "...", "folder": "AUTOTESTBOX" } }</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MB_INFO">
+                <div class="command-meta"><span class="command-name">30. MB_INFO</span></div>
+                <div class="desc">Detailed stats for a mailbox folder.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>folder_code</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Folder code to query</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "MB_INFO", "data": { "session_token": "...", "folder_code": "INBOX" } }</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MB_PURGE_TRASH">
+                <div class="command-meta"><span class="command-name">31. MB_PURGE_TRASH</span></div>
+                <div class="desc">Hard-deletes all messages currently in the BIN (Trash).</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "MB_PURGE_TRASH", "data": { "session_token": "..." } }</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MB_SUBSCRIBE">
+                <div class="command-meta"><span class="command-name">32. MB_SUBSCRIBE</span></div>
+                <div class="desc">Subscribes to real-time server-push notifications for a folder.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>folder</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Folder code (e.g. INBOX)</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MB_SUBSCRIBE",
+  "data": { "session_token": "...", "folder": "INBOX" }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MB_UNSUBSCRIBE">
+                <div class="command-meta"><span class="command-name">33. MB_UNSUBSCRIBE</span></div>
+                <div class="desc">Stops push notifications for a folder.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>folder</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Folder code (e.g. INBOX)</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MB_UNSUBSCRIBE",
+  "data": { "session_token": "...", "folder": "INBOX" }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MESSAGES SECTION -->
+            <div class="section-header">
+                <h2>✉️ Message Operations</h2>
+            </div>
+
+            <div class="command" id="MSG_SEND">
+                <div class="command-meta"><span class="command-name">34. MSG_SEND</span></div>
+                <div class="desc">Sends a message to recipients. Stores a copy in the SENT folder.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>to</td>
+                            <td>array[string]</td>
+                            <td><span class="req">YES</span></td>
+                            <td>List of recipient email addresses</td>
+                        </tr>
+                        <tr>
+                            <td>subject</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Subject line</td>
+                        </tr>
+                        <tr>
+                            <td>body</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Email body content</td>
+                        </tr>
+                        <tr>
+                            <td>attachment_ids</td>
+                            <td>array[string]</td>
+                            <td>NO</td>
+                            <td>Upload IDs for attachments</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MSG_SEND",
+  "data": {
+    "session_token": "auth_...",
+    "to": ["bob@wmtp.org"],
+    "subject": "Hello",
+    "body": "Hi Bob!",
+    "attachment_ids": ["upl_992"]
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MSG_SEND_DRAFT">
+                <div class="command-meta"><span class="command-name">35. MSG_SEND_DRAFT</span></div>
+                <div class="desc">Saves a message directly to DRAFTS.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>to</td>
+                            <td>array[string]</td>
+                            <td>NO</td>
+                            <td>Optional recipient list</td>
+                        </tr>
+                        <tr>
+                            <td>subject</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Draft subject</td>
+                        </tr>
+                        <tr>
+                            <td>body</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Draft body</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MSG_SEND_DRAFT",
+  "data": {
+    "session_token": "...",
+    "subject": "Incomplete thought"
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MSG_LIST">
+                <div class="command-meta"><span class="command-name">36. MSG_LIST</span></div>
+                <div class="desc">Lists messages in a folder with pagination.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>folder</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Folder code (e.g. INBOX)</td>
+                        </tr>
+                        <tr>
+                            <td>limit</td>
+                            <td>number</td>
+                            <td>NO</td>
+                            <td>Max messages to return</td>
+                        </tr>
+                        <tr>
+                            <td>offset</td>
+                            <td>number</td>
+                            <td>NO</td>
+                            <td>Skip count</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MSG_LIST",
+  "data": { "session_token": "...", "folder": "INBOX", "limit": 20 }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MSG_GET">
+                <div class="command-meta"><span class="command-name">37. MSG_GET</span></div>
+                <div class="desc">Get full body of a message.</div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MSG_GET",
+  "data": {
+    "session_token": "...",
+    "id": "694a448e802cffa5ed7cdf11"
+  }
+}</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "MSG_GET",
+  "status": "OK",
+  "msg": "Message",
+  "message": {
+    "id": "694a448e802cffa5ed7cdf11",
+    "folder_code": "SENT",
+    "from": "test@auto.com",
+    "to": ["test@auto.com"],
+    "subject": "Test Message 1",
+    "snippet": "Hello from auto tester",
+    "body": "Hello from auto tester",
+    "received_at": "2025-12-23T07:28:14.795+00:00",
+    "unread": false
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MSG_HEADERS">
+                <div class="command-meta"><span class="command-name">38. MSG_HEADERS</span></div>
+                <div class="desc">Retrieves RFC822/Envelope headers for a specific message.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>id</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Message unique ID</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MSG_HEADERS",
+  "data": {
+    "session_token": "...",
+    "id": "694a448e802cffa5ed7cdf11"
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MSG_THREAD">
+                <div class="command-meta"><span class="command-name">39. MSG_THREAD</span></div>
+                <div class="desc">Retrieves entire thread/conversation history.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>id</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Message ID in the thread</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MSG_THREAD",
+  "data": { "session_token": "...", "id": "694a44..." }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MSG_MOVE">
+                <div class="command-meta"><span class="command-name">40. MSG_MOVE</span></div>
+                <div class="desc">Moves a message to a different folder.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>id</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Message ID</td>
+                        </tr>
+                        <tr>
+                            <td>target_folder</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Target folder code (e.g. TRASH)</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MSG_MOVE",
+  "data": {
+    "session_token": "auth_...",
+    "id": "507f1f...",
+    "target_folder": "BIN"
+  }
+}</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "MSG_MOVE",
+  "status": "OK",
+  "msg": "Moved to ARCHIVE"
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MSG_COPY">
+                <div class="command-meta"><span class="command-name">41. MSG_COPY</span></div>
+                <div class="desc">Copies a message to another folder.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>id</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Message ID</td>
+                        </tr>
+                        <tr>
+                            <td>target_folder</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Target folder code</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MSG_COPY",
+  "data": { "session_token": "...", "id": "...", "target_folder": "ARCHIVE" }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MSG_DELETE">
+                <div class="command-meta"><span class="command-name">42. MSG_DELETE</span></div>
+                <div class="desc">Soft-deletes a message (moves to BIN).</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>id</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Message ID</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MSG_DELETE",
+  "data": { "session_token": "...", "id": "..." }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MSG_EXPUNGE">
+                <div class="command-meta"><span class="command-name">43. MSG_EXPUNGE</span></div>
+                <div class="desc">Hard-deletes a message permanently.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>id</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Message ID</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MSG_EXPUNGE",
+  "data": { "session_token": "...", "id": "..." }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MSG_UNDELETE">
+                <div class="command-meta"><span class="command-name">44. MSG_UNDELETE</span></div>
+                <div class="desc">Restores soft-deleted messages from the BIN folder.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>id</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Message ID</td>
+                        </tr>
+                        <tr>
+                            <td>target_folder</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Optional destination (defaults to INBOX)</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MSG_UNDELETE",
+  "data": { "session_token": "...", "id": "...", "target_folder": "INBOX" }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MSG_FLAG_SET">
+                <div class="command-meta"><span class="command-name">45. MSG_FLAG_SET</span></div>
+                <div class="desc">Enables specific flags (read, starred, important) on a message.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>id</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Message ID</td>
+                        </tr>
+                        <tr>
+                            <td>read</td>
+                            <td>bool</td>
+                            <td>NO</td>
+                            <td>Set read status</td>
+                        </tr>
+                        <tr>
+                            <td>starred</td>
+                            <td>bool</td>
+                            <td>NO</td>
+                            <td>Set starred status</td>
+                        </tr>
+                        <tr>
+                            <td>important</td>
+                            <td>bool</td>
+                            <td>NO</td>
+                            <td>Set importance</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MSG_FLAG_SET",
+  "data": {
+    "session_token": "auth_...",
+    "id": "...",
+    "starred": true
+  }
+}</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "MSG_FLAG_SET",
+  "status": "OK",
+  "msg": "Flag set"
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MSG_FLAG_CLEAR">
+                <div class="command-meta"><span class="command-name">46. MSG_FLAG_CLEAR</span></div>
+                <div class="desc">Disables specific flags for a message.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>id</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Message ID</td>
+                        </tr>
+                        <tr>
+                            <td>read</td>
+                            <td>bool</td>
+                            <td>NO</td>
+                            <td>Clear read status</td>
+                        </tr>
+                        <tr>
+                            <td>starred</td>
+                            <td>bool</td>
+                            <td>NO</td>
+                            <td>Clear starred status</td>
+                        </tr>
+                        <tr>
+                            <td>important</td>
+                            <td>bool</td>
+                            <td>NO</td>
+                            <td>Clear importance</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MSG_FLAG_CLEAR",
+  "data": { "session_token": "...", "id": "...", "read": false }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="MSG_BULK_ACTION">
+                <div class="command-meta"><span class="command-name">47. MSG_BULK_ACTION</span></div>
+                <div class="desc">Performs an action across multiple messages in one request.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>ids</td>
+                            <td>array[string]</td>
+                            <td><span class="req">YES</span></td>
+                            <td>List of message IDs</td>
+                        </tr>
+                        <tr>
+                            <td>action</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>'MOVE', 'DELETE', 'EXPUNGE', 'FLAG_SET', 'FLAG_CLEAR'</td>
+                        </tr>
+                        <tr>
+                            <td>target_folder</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Required for 'MOVE' action</td>
+                        </tr>
+                        <tr>
+                            <td>flags</td>
+                            <td>object</td>
+                            <td>NO</td>
+                            <td>Required for 'FLAG_SET'/'FLAG_CLEAR'</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "MSG_BULK_ACTION",
+  "data": {
+    "session_token": "...",
+    "ids": ["id_A", "id_B"],
+    "action": "DELETE"
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEARCH SECTION -->
+            <div class="section-header">
+                <h2>🔍 Search & Discovery</h2>
+            </div>
+
+            <div class="command" id="SEARCH">
+                <div class="command-meta"><span class="command-name">48. SEARCH</span></div>
+                <div class="desc">Standard text search in a specific folder.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>q</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Search terms</td>
+                        </tr>
+                        <tr>
+                            <td>folder_code</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Folder code to search</td>
+                        </tr>
+                        <tr>
+                            <td>from</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Filter by sender email</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "SEARCH",
+  "data": { "session_token": "...", "q": "meeting", "folder_code": "SENT" }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="SEARCH_GLOBAL">
+                <div class="command-meta"><span class="command-name">49. SEARCH_GLOBAL</span></div>
+                <div class="desc">Searches across all folders for the user.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>q</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Search terms</td>
+                        </tr>
+                        <tr>
+                            <td>from</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Filter by sender email</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{ "cmd": "SEARCH_GLOBAL", "data": { "session_token": "...", "q": "receipt" } }</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="SEARCH_ADV">
+                <div class="command-meta"><span class="command-name">50. SEARCH_ADV</span></div>
+                <div class="desc">Advanced filtering (by sender, folder, flags, dates).</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>folder_code</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Filter by folder</td>
+                        </tr>
+                        <tr>
+                            <td>q</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Search terms</td>
+                        </tr>
+                        <tr>
+                            <td>from</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Filter by sender</td>
+                        </tr>
+                        <tr>
+                            <td>to</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Filter by recipient</td>
+                        </tr>
+                        <tr>
+                            <td>unread</td>
+                            <td>boolean</td>
+                            <td>NO</td>
+                            <td>Filter by read status</td>
+                        </tr>
+                        <tr>
+                            <td>starred</td>
+                            <td>boolean</td>
+                            <td>NO</td>
+                            <td>Filter by star status</td>
+                        </tr>
+                        <tr>
+                            <td>important</td>
+                            <td>boolean</td>
+                            <td>NO</td>
+                            <td>Filter by importance</td>
+                        </tr>
+                        <tr>
+                            <td>date_from</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Start date (ISO 8601)</td>
+                        </tr>
+                        <tr>
+                            <td>date_to</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>End date (ISO 8601)</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "SEARCH_ADV",
+  "data": {
+    "session_token": "...",
+    "from": "boss@corp.com",
+    "unread": true
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="SEARCH_SUGGEST">
+                <div class="command-meta"><span class="command-name">51. SEARCH_SUGGEST</span></div>
+                <div class="desc">Retrieves search suggestions based on partial input.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>query</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Partial query string</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "SEARCH_SUGGEST",
+  "data": { "session_token": "...", "query": "invoi" }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- USER SECTION -->
+            <div class="section-header">
+                <h2>👤 User & Profile</h2>
+            </div>
+
+            <div class="command" id="PROFILE_GET">
+                <div class="command-meta"><span class="command-name">52. PROFILE_GET</span></div>
+                <div class="desc">Retrieves the full profile of the currently authenticated user.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "PROFILE_GET",
+  "data": { "session_token": "..." }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="PROFILE_SET">
+                <div class="command-meta"><span class="command-name">53. PROFILE_SET</span></div>
+                <div class="desc">Updates user profile information.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>name</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>Display name</td>
+                        </tr>
+                        <tr>
+                            <td>bio</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>User bio</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "PROFILE_SET",
+  "data": { "session_token": "...", "name": "Jane Doe" }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="PREF_GET">
+                <div class="command-meta"><span class="command-name">54. PREF_GET</span></div>
+                <div class="desc">Retrieves user-specific application preferences.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "PREF_GET",
+  "data": { "session_token": "..." }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="PREF_SET">
+                <div class="command-meta"><span class="command-name">55. PREF_SET</span></div>
+                <div class="desc">Updates user application preferences.</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>theme</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>'light', 'dark', 'system'</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "PREF_SET",
+  "data": { "session_token": "...", "theme": "light" }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ATTACHMENTS SECTION -->
+            <div class="section-header">
+                <h2>📎 Attachments</h2>
+            </div>
+
+            <div class="command" id="ATTACH_UPLOAD_INIT">
+                <div class="command-meta"><span class="command-name">56. ATTACH_UPLOAD_INIT</span></div>
+                <div class="desc">Initiates an attachment upload (returns an upload ID).</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>filename</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Original filename</td>
+                        </tr>
+                        <tr>
+                            <td>mime_type</td>
+                            <td>string</td>
+                            <td>NO</td>
+                            <td>File MIME type (default: application/octet-stream)</td>
+                        </tr>
+                        <tr>
+                            <td>size_bytes</td>
+                            <td>integer</td>
+                            <td>NO</td>
+                            <td>File size in bytes</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "ATTACH_UPLOAD_INIT",
+  "data": {
+    "session_token": "auth_...",
+    "filename": "doc.pdf",
+    "mime_type": "application/pdf",
+    "size_bytes": 1024
+  }
+}</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "ATTACH_UPLOAD_INIT",
+  "status": "OK",
+  "msg": "Attachment upload initialized",
+  "data": {
+    "upload": {
+      "upload_id": "upl_123...",
+      "filename": "doc.pdf",
+      "mime_type": "application/pdf",
+      "size_bytes": 1024
+    }
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="command" id="ATTACH_GET">
+                <div class="command-meta"><span class="command-name">57. ATTACH_GET</span></div>
+                <div class="desc">Retrieves attachment metadata and binary content (Base64).</div>
+                <div class="field-section">
+                    <div class="field-label">Request Payload</div>
+                    <table class="field-table">
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>session_token</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>Active session token</td>
+                        </tr>
+                        <tr>
+                            <td>attachment_id</td>
+                            <td>string</td>
+                            <td><span class="req">YES</span></td>
+                            <td>The upload_id of the attachment</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="code-grid">
+                    <div class="code-block">
+                        <div class="code-header">Request</div>
+                        <pre>{
+  "cmd": "ATTACH_GET",
+  "data": {
+    "session_token": "auth_...",
+    "attachment_id": "upl_999..."
+  }
+}</pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">Response</div>
+                        <pre>{
+  "cmd": "ATTACH_GET",
+  "status": "OK",
+  "msg": "Attachment fetched",
+  "data": {
+    "attachment_id": "upl_999...",
+    "filename": "doc.pdf",
+    "mime_type": "application/pdf",
+    "size_bytes": 1024,
+    "content_b64": "..."
+  }
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <footer>
+                <p><strong>WMTP API Specification v1.0.0</strong></p>
+                <p>Total Commands Documented: 57 | Protocol: WebTransport (QUIC)</p>
+                <p style="margin-top:20px; font-size: 0.75rem; opacity: 0.5;">© 2024 WMTP Project Team</p>
+            </footer>
+        </main>
+    </div>
+    <script>
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.querySelector('aside');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+            const icon = menuToggle.querySelector('svg');
+            if (sidebar.classList.contains('active')) {
+                icon.innerHTML = '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>';
+            } else {
+                icon.innerHTML = '<line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>';
+            }
+        });
+
+        // Close sidebar when clicking a link on mobile
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 1024) {
+                    sidebar.classList.remove('active');
+                    menuToggle.querySelector('svg').innerHTML = '<line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>';
+                }
+            });
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 1024 &&
+                !sidebar.contains(e.target) &&
+                !menuToggle.contains(e.target) &&
+                sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+                menuToggle.querySelector('svg').innerHTML = '<line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>';
+            }
+        });
+    </script>
+</body>
+
+</html>

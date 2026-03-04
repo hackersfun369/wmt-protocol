@@ -1,4 +1,4 @@
-use mongodb::bson::{self,doc, oid::ObjectId};
+use mongodb::bson::{self, doc as bson_doc, oid::ObjectId};
 use mongodb::Collection;
 
 use crate::comm::{Request, Response};
@@ -58,8 +58,8 @@ pub async fn handle_profile_set(
     // 4) updateOne in Mongo
     let res = match users_coll
         .update_one(
-            doc! { "_id": &user_id },
-            doc! { "$set": set_doc },
+            bson_doc! { "_id": &user_id },
+            bson_doc! { "$set": set_doc },
         )
         .await
     {

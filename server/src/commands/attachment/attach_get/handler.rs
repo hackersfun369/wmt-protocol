@@ -1,5 +1,5 @@
 use futures_util::io::AsyncReadExt as FuturesAsyncReadExt;
-use mongodb::bson::doc;
+use mongodb::bson::doc as bson_doc;
 use mongodb::gridfs::GridFsBucket;
 use mongodb::{Collection, Database};
 use serde::{Deserialize, Serialize};
@@ -64,7 +64,7 @@ pub async fn handle_attach_get(
 
     // Find PendingUpload by upload_id for this user
     let pending = match uploads_coll
-        .find_one(doc! { "user_id": &user_id, "upload_id": attachment_id })
+        .find_one(bson_doc! { "user_id": &user_id, "upload_id": attachment_id })
         .await
     {
         Ok(Some(p)) => p,

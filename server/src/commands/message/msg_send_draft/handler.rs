@@ -5,7 +5,7 @@ use crate::comm::{Request, Response};
 use crate::session::SessionStore;
 use crate::commands::mailbox::db::{MailboxRepository, AttachmentMeta};
 use crate::commands::attachment::attach_upload_init::handler::PendingUpload;
-use mongodb::bson::doc;
+use mongodb::bson::doc as bson_doc;
 
 pub async fn handle_msg_send_draft(
     token: &str,
@@ -81,7 +81,7 @@ pub async fn handle_msg_send_draft(
         for id_val in att_ids {
             if let Some(upload_id) = id_val.as_str() {
                 // look up in PendingUpload
-                match uploads_coll.find_one(doc! { "upload_id": upload_id }).await {
+                match uploads_coll.find_one(bson_doc! { "upload_id": upload_id }).await {
                     Ok(Some(pending)) if pending.completed => {
                         attachments.push(AttachmentMeta {
                             id: upload_id.to_string(),

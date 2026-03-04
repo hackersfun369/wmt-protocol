@@ -1,0 +1,25 @@
+﻿cargo :     Updating crates.io index
+At line:1 char:1
++ cargo build 2>&1 | Out-File -FilePath 
+dep_conflict.txt -Encoding utf8
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified 
+   : (    Updating crates.io index:String  
+  ) [], RemoteException
+    + FullyQualifiedErrorId : NativeComman 
+   dError
+ 
+error: failed to select a version for 
+`mongodb`.
+    ... required by package `wmtp-server 
+v0.1.0 (C:\Drive_D\webdev\WMTP\server)`
+versions that meet the requirements 
+`^3.5.1` are: 3.5.1
+
+package `wmtp-server` depends on `mongodb` 
+with feature `gridfs` but `mongodb` does 
+not have that feature.
+
+
+failed to select a version for `mongodb` 
+which could resolve this conflict

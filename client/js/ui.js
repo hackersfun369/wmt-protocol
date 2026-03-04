@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (url.includes('localhost') || url.includes('127.0.0.1')) {
-                wmtpTransport.setCertificateHash('9kDUV0kAxsCBObFdiULtY3w5b0xcp8l6A+uF7Ds9yFc=');
+                wmtpTransport.setCertificateHash('c0bFjlLyBEeJAR8ECmPOd6ED6GQnjgweOptVMusDero=');
                 log('Using self-signed certificate hash', 'info');
             }
 
@@ -389,15 +389,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     // 2) open attachment stream
                     const { send, recv } = await wmtpTransport.openAttachmentStream();
 
-                    // 3) send header (JSON + \n) on attachment stream
+                    // 3) send Binary Framing Header
+                    // Format: [u64 FileSize (8 bytes)] [u32 MetaLen (4 bytes)] [JSON Metadata]
                     const header = {
                         upload_id: uploadId,
                         filename: file.name,
                         mime_type: file.type || 'application/octet-stream',
                         size_bytes: file.size,
                     };
-                    const headerStr = JSON.stringify(header) + '\n';
-                    await send.write(new TextEncoder().encode(headerStr));
+                    const headerJson = JSON.stringify(header);
+                    const headerBytes = new TextEncoder().encode(headerJson);
+
+                    const framingBuffer = new ArrayBuffer(8 + 4 + headerBytes.byteLength);
+                    const view = new DataView(framingBuffer);
+
+                    // 1. File Size (u64, Little Endian)
+                    view.setBigUint64(0, BigInt(file.size), true);
+
+                    // 2. Metadata Length (u32, Little Endian)
+                    view.setUint32(8, headerBytes.byteLength, true);
+
+                    // 3. Metadata JSON
+                    const framingArray = new Uint8Array(framingBuffer);
+                    framingArray.set(headerBytes, 12);
+
+                    await send.write(framingArray);
 
                     // 4) stream raw bytes
                     const reader = file.stream().getReader();

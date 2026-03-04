@@ -1,6 +1,6 @@
 use std::time::SystemTime;
 use chrono::{DateTime, Utc};
-use mongodb::bson::{doc, oid::ObjectId};
+use mongodb::bson::{doc as bson_doc, oid::ObjectId};
 use mongodb::Collection;
 use serde::Serialize;
 
@@ -51,7 +51,7 @@ pub async fn handle_profile_get(
 
     // 3) load user doc
     let user = match users_coll
-        .find_one(doc! { "_id": &user_id })
+        .find_one(bson_doc! { "_id": &user_id })
         .await
     {
         Ok(Some(u)) => u,
