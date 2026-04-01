@@ -1,21 +1,27 @@
 # WMTP - WebTransport Mail Transfer Protocol
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-red)
 ![Transport](https://img.shields.io/badge/transport-WebTransport/QUIC-purple)
 ![Verified](https://img.shields.io/badge/protocol-57_commands_verified-success)
 
 A next-generation, secure, low-latency email transfer protocol built on **QUIC** and **WebTransport**. WMTP unifies message submission and retrieval into a single, encrypted, stateful connection, eliminating Head-of-Line (HoL) blocking and high handshake latency.
 
-🌐 **Website:** [https://wmtp-docs.netlify.app/](https://wmtp-docs.netlify.app/)
+---
+
+## 📸 Console Preview
+
+The WMTP Protocol Testing Suite provides a premium, real-time interface for interacting with the Rust server.
+
+![WMTP Console Preview](docs/assets/console_preview.png)
 
 ---
 
-## ✨ Features
+## ✨ Key Features
 
 - 🚀 **QUIC-Powered** - Native multiplexing via independent data streams (eliminates HoL blocking).
 - 🦀 **Rust Core** - High-performance, memory-safe backend built with `tokio` and `wtransport`.
-- 🔒 **Always Encrypted** - Mandatory TLS 1.3 with 1-RTT connection establishment.
+- 🔒 **Always Encrypted** - Mandatory TLS 1.3 with 1-RTT connection establishment (~4.2x faster than SMTP/IMAP).
 - 📁 **Dual-Plane Architecture** - Dedicated planes for JSON Control (Low-latency) and Raw Binary Data (High-throughput).
 - ⚡ **O(1) Memory Streaming** - Zero-copy attachment handling directly to MongoDB GridFS.
 - 📱 **Connection Migration** - Sessions survive IP changes (e.g., switching from Wi-Fi to 5G) seamlessly.
@@ -25,45 +31,46 @@ A next-generation, secure, low-latency email transfer protocol built on **QUIC**
 
 ## 🏗️ Architecture
 
-WMTP decouples control logic from bulk data transport using a multi-stream approach:
+WMTP decouples control logic from bulk data transport using a multi-stream approach.
 
-```mermaid
-graph LR
-    subgraph Client [Browser Client]
-        UI[UI / App]
-        WT[WebTransport Adapter]
-    end
+### System Overview
+![WMTP Architecture](docs/assets/architecture.jpg)
 
-    subgraph Server [WMTP Rust Server]
-        H[Stream Handlers]
-        S[Session Manager]
-        I[I/O Reactor]
-    end
+### Connection Lifecycle
+The protocol manages state across connecting, authenticated, and suspended phases, allowing for seamless recovery.
+![Connection Lifecycle](docs/assets/lifecycle.jpeg)
 
-    subgraph DB [Persistence]
-        M[(MongoDB)]
-        G[GridFS]
-    end
+### Zero-Copy Binary Transport
+Unlike legacy protocols that require Base64 encoding (adding 33% overhead), WMTP uses direct binary streams.
+![Zero-Copy Transport](docs/assets/zero_copy.jpeg)
 
-    UI <--> WT
-    WT -- "Control Stream (JSON)" --> H
-    WT -- "Attachment Stream (Binary)" --> H
-    H <--> S
-    S <--> I
-    I <--> M
-    I <--> G
-```
+---
+
+## 🛡️ Security & Reliability
+
+### Security Architecture
+WMTP mandates TLS 1.3 for every packet, ensuring forward secrecy and protected handshakes.
+![Security Architecture](docs/assets/security.jpeg)
+
+### Connection Migration
+Thanks to QUIC Connection IDs, a WMTP session can survive a transition between different networks (e.g., Wi-Fi to Cellular) without dropping the connection.
+![Connection Migration](docs/assets/migration.jpeg)
 
 ---
 
 ## 🚀 Performance Benchmarks
 
-Measured on a single connection over loopback:
+### Latency Comparison
+WMTP's 1-RTT (and 0-RTT for resumed sessions) significantly outperforms legacy SMTP/IMAP handshakes.
+![Latency Comparison](docs/assets/latency.png)
 
-- **Handshake Latency**: ~20ms (1-RTT)
-- **Avg. Command RTT**: < 4ms
-- **Binary Throughput**: 33+ MB/s (Raw binary, no Base64 overhead)
-- **Concurrency**: 8,700+ Requests Per Second sustained
+### Throughput Efficiency
+WMTP maintains high throughput even in high-latency or jittery network environments.
+![Throughput Efficiency](docs/assets/throughput.png)
+
+### Resource Utilization
+The Rust-based reactor using `tokio` tasks is significantly more memory-efficient than traditional process-per-connection or thread-per-connection models.
+![Resource Utilization](docs/assets/memory.png)
 
 ---
 
@@ -80,18 +87,18 @@ git clone https://github.com/hackersfun369/wmt-protocol.git
 cd wmt-protocol
 ```
 
-### 2. Generate Certs (or use provided)
-Ensure `certs/cert.pem` and `certs/key.pem` are present.
+### 2. Automatic Certificate & Hash Management
+WMTP requires TLS 1.3. For local development, we provide a smart setup script that handles certificate generation and client-side hash pinning automatically.
+
 ```bash
-mkdir certs
-cd certs
-# Generate self-signed certs for localhost
-# Note: Browsers typically require short-lived or trusted certificates for WebTransport.
-openssl req -new -x509 -nodes -keyout key.pem -out cert.pem -days 10 -subj "/CN=localhost"
-(or)
-using node.js enable us to create certificates automatically. Run
+# Generate fresh certs and update client hash pins (transport.js & ui.js)
 node smart_setup.js
 ```
+
+> [!IMPORTANT]
+> **Hash Key Matching**: Since we use self-signed certificates for local development, the browser requires the certificate's SHA-256 hash for verification. `smart_setup.js` automatically calculates this and injects it into:
+> - `client/js/transport.js` (for the transport layer)
+> - `client/js/ui.js` (for the console UI)
 
 ### 3. Run Server
 ```bash
@@ -99,8 +106,13 @@ cd server
 cargo run
 ```
 
-### 4. Run Automated Tests
-Open `client/auto_tester.html` in your browser. This will run the full 57-command verification suite.
+### 4. Open Console
+Serve the client directory and open it in your browser:
+```bash
+cd client
+npx serve . -p 8080
+```
+Then navigate to `http://localhost:8080` to access the **WMTP Hub**.
 
 ---
 
@@ -110,11 +122,12 @@ Open `client/auto_tester.html` in your browser. This will run the full 57-comman
 wmt-protocol/
 ├── server/          # Rust WebTransport server (Tokio + Wtransport)
 │   └── src/commands # 57 Command Handlers (Mailbox, MSG, Auth, etc.)
-├── client/          # Browser client implementation
+├── client/          # Browser client implementation (Premium UI)
 │   ├── js/          # Transport & Protocol logic
-│   └── *.html       # UI, Auto-Tester, Benchmark tool
+│   └── index.html   # Main Console UI
 ├── docs/            # Full API Reference & Research Paper
-└── certs/           # TLS Certificates
+│   └── assets/      # README & Documentation visuals
+└── certs/           # TLS Certificates (Generated via smart_setup)
 ```
 
 ---
@@ -122,9 +135,8 @@ wmt-protocol/
 ## 📖 API Reference
 The complete specification of all 57 commands is available in [WMTP_API_REFERENCE.html](docs/WMTP_API_REFERENCE.html).
 
-### Example Command
+### Example JSON Command
 ```json
-// Request
 {
   "cmd": "MSG_GET",
   "data": {
@@ -142,3 +154,4 @@ The complete specification of all 57 commands is available in [WMTP_API_REFERENC
 - **mongodb**: High-performance persistence layer.
 
 Made with ❤️ for the future of email.
+
