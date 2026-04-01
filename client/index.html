@@ -4,110 +4,1089 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMTP Premium Console</title>
-    <link rel="stylesheet" href="tester.css">
-    <!-- Modern Google Fonts -->
+    <title>WMTP Console — Protocol Testing Suite</title>
     <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"
         rel="stylesheet">
+    <style>
+        /* =====================================================================
+   WMTP CONSOLE — PREMIUM LIGHT UI
+   ===================================================================== */
+
+        :root {
+            --c-bg: #f7f8fc;
+            --c-surface: #ffffff;
+            --c-surface-2: #f3f4f8;
+            --c-surface-3: #eceef5;
+
+            --c-border: #e4e6ef;
+            --c-border-2: #d1d4e0;
+
+            --c-text: #0f1117;
+            --c-text-2: #4b5063;
+            --c-text-3: #8b91a7;
+
+            --c-blue: #2563eb;
+            --c-blue-mid: #3b7eff;
+            --c-blue-light: #eff4ff;
+            --c-blue-glow: rgba(37, 99, 235, 0.14);
+
+            --c-green: #16a34a;
+            --c-green-light: #f0fdf4;
+            --c-red: #dc2626;
+            --c-red-light: #fff5f5;
+            --c-amber: #d97706;
+
+            --c-terminal: #0d0f14;
+
+            --radius-xs: 4px;
+            --radius-sm: 7px;
+            --radius-md: 11px;
+            --radius-lg: 16px;
+
+            --shadow-xs: 0 1px 2px rgba(0, 0, 0, .05);
+            --shadow-sm: 0 1px 4px rgba(0, 0, 0, .07), 0 0 0 1px rgba(0, 0, 0, .03);
+            --shadow-md: 0 4px 18px rgba(0, 0, 0, .08), 0 1px 4px rgba(0, 0, 0, .04);
+            --shadow-lg: 0 12px 40px rgba(0, 0, 0, .10), 0 2px 8px rgba(0, 0, 0, .05);
+
+            --font: 'Geist', -apple-system, sans-serif;
+            --mono: 'Geist Mono', 'Fira Code', monospace;
+
+            --sidebar-w: 258px;
+            --header-h: 60px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--c-bg);
+            color: var(--c-text);
+            display: flex;
+            overflow: hidden;
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* SCROLLBARS */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--c-border-2);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--c-text-3);
+        }
+
+        /* =====================================================================
+   LAYOUT SHELL
+   ===================================================================== */
+
+        .app {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* =====================================================================
+   SIDEBAR
+   ===================================================================== */
+
+        .sidebar {
+            width: var(--sidebar-w);
+            min-width: 200px;
+            max-width: 400px;
+            background: var(--c-surface);
+            border-right: 1px solid var(--c-border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 20;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 18px 18px 14px;
+            border-bottom: 1px solid var(--c-border);
+        }
+
+        .brand-mark {
+            width: 34px;
+            height: 34px;
+            background: var(--c-blue);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, .35);
+        }
+
+        .brand-name {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -0.4px;
+            color: var(--c-text);
+            line-height: 1.1;
+        }
+
+        .brand-name em {
+            color: var(--c-blue);
+            font-style: normal;
+        }
+
+        .brand-tag {
+            font-size: 11px;
+            color: var(--c-text-3);
+            font-weight: 400;
+            margin-top: 1px;
+            display: block;
+        }
+
+        .sidebar-status {
+            margin: 12px 14px;
+            padding: 10px 12px;
+            background: var(--c-surface-2);
+            border: 1px solid var(--c-border);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-ring {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--c-surface-3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--c-border-2);
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        .dot.connected {
+            background: var(--c-green);
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, .18);
+            animation: breathe 2.4s ease-in-out infinite;
+        }
+
+        .dot.error {
+            background: var(--c-red);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, .18);
+        }
+
+        @keyframes breathe {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 3px rgba(22, 163, 74, .18);
+            }
+
+            50% {
+                box-shadow: 0 0 0 5px rgba(22, 163, 74, .08);
+            }
+        }
+
+        .status-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .status-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--c-text);
+            display: block;
+            line-height: 1.2;
+        }
+
+        .status-session {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--c-text-3);
+            display: block;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nav-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0 16px;
+        }
+
+        .nav-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        /* cmd-category and cmd-item are rendered by tester.js */
+        .cmd-category {
+            padding: 14px 18px 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--c-text-3);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .cmd-category::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--c-border);
+        }
+
+        .cmd-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 14px 7px 18px;
+            font-family: var(--mono);
+            font-size: 12.5px;
+            color: var(--c-text-2);
+            cursor: pointer;
+            transition: all 0.12s ease;
+            position: relative;
+            user-select: none;
+        }
+
+        .cmd-item::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--c-border-2);
+            flex-shrink: 0;
+            transition: all 0.12s;
+        }
+
+        .cmd-item:hover {
+            color: var(--c-text);
+            background: var(--c-surface-2);
+        }
+
+        .cmd-item:hover::before {
+            background: var(--c-blue-mid);
+        }
+
+        .cmd-item.active {
+            color: var(--c-blue);
+            background: var(--c-blue-light);
+            font-weight: 500;
+        }
+
+        .cmd-item.active::before {
+            background: var(--c-blue);
+            box-shadow: 0 0 0 2px var(--c-blue-glow);
+        }
+
+        .cmd-item.active::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 3px;
+            bottom: 3px;
+            width: 3px;
+            background: var(--c-blue);
+            border-radius: 0 3px 3px 0;
+        }
+
+        /* =====================================================================
+   RESIZER
+   ===================================================================== */
+
+        .resizer {
+            width: 4px;
+            background: transparent;
+            cursor: col-resize;
+            flex-shrink: 0;
+            z-index: 30;
+            transition: background 0.2s;
+        }
+
+        .resizer:hover,
+        .resizer.dragging {
+            background: var(--c-blue);
+        }
+
+        /* =====================================================================
+   WORKSPACE
+   ===================================================================== */
+
+        .workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            background: var(--c-bg);
+        }
+
+        .topbar {
+            height: var(--header-h);
+            background: var(--c-surface);
+            border-bottom: 1px solid var(--c-border);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            gap: 14px;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-xs);
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .topbar-badge {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--c-blue);
+            background: var(--c-blue-light);
+            border: 1px solid rgba(37, 99, 235, .2);
+            padding: 3px 8px;
+            border-radius: var(--radius-xs);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .topbar-name {
+            font-family: var(--mono);
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--c-text);
+            letter-spacing: -0.3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .topbar-sep {
+            color: var(--c-border-2);
+            font-size: 18px;
+            font-weight: 300;
+            flex-shrink: 0;
+        }
+
+        .topbar-desc {
+            font-size: 13px;
+            color: var(--c-text-3);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex-shrink: 0;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11.5px;
+            font-weight: 500;
+            background: var(--c-surface-2);
+            border: 1px solid var(--c-border);
+            color: var(--c-text-2);
+        }
+
+        .pill svg {
+            flex-shrink: 0;
+        }
+
+        /* =====================================================================
+   CONTENT
+   ===================================================================== */
+
+        .content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            overflow: hidden;
+        }
+
+        .pane {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .pane-left {
+            border-right: 1px solid var(--c-border);
+        }
+
+        .pane-header {
+            height: 42px;
+            background: var(--c-surface);
+            border-bottom: 1px solid var(--c-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 18px;
+            flex-shrink: 0;
+        }
+
+        .pane-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--c-text-3);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pane-title-accent {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--c-blue);
+        }
+
+        .pane-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .btn-xs {
+            padding: 4px 10px;
+            border-radius: var(--radius-xs);
+            font-family: var(--font);
+            font-weight: 500;
+            font-size: 11.5px;
+            cursor: pointer;
+            border: 1px solid var(--c-border);
+            background: var(--c-surface);
+            color: var(--c-text-2);
+            transition: all 0.12s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-xs:hover {
+            background: var(--c-surface-2);
+            border-color: var(--c-border-2);
+            color: var(--c-text);
+        }
+
+        /* ─── FORM AREA ─── */
+        .form-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 18px 20px 14px;
+        }
+
+        /* form-group, form-label, form-control, btn btn-primary all injected by tester.js
+   — overridden via the style block at bottom */
+
+        /* ─── TERMINAL ─── */
+        .terminal-wrap {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+            background: var(--c-terminal);
+        }
+
+        .terminal-bar {
+            height: 42px;
+            background: #161920;
+            border-bottom: 1px solid rgba(255, 255, 255, .06);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .tbar-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .tbar-dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+        }
+
+        .td-r {
+            background: #ff5f57;
+        }
+
+        .td-y {
+            background: #febc2e;
+        }
+
+        .td-g {
+            background: #28c840;
+        }
+
+        .tbar-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, .28);
+            font-family: var(--mono);
+            letter-spacing: 0.3px;
+        }
+
+        .tbar-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: rgba(255, 255, 255, .3);
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #28c840;
+            animation: livepulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes livepulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.35;
+            }
+        }
+
+        .tbar-btn {
+            padding: 3px 9px;
+            border-radius: 5px;
+            font-family: var(--font);
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, .1);
+            background: rgba(255, 255, 255, .05);
+            color: rgba(255, 255, 255, .35);
+            transition: all 0.12s;
+        }
+
+        .tbar-btn:hover {
+            background: rgba(255, 255, 255, .1);
+            color: rgba(255, 255, 255, .65);
+            border-color: rgba(255, 255, 255, .16);
+        }
+
+        .terminal-empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: rgba(255, 255, 255, .15);
+            padding: 40px;
+        }
+
+        .empty-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, .04);
+            border: 1px solid rgba(255, 255, 255, .07);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .terminal-empty-state p {
+            font-size: 12px;
+            font-family: var(--mono);
+            text-align: center;
+            line-height: 1.7;
+        }
+
+        .terminal-log {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+        }
+
+        .terminal-log::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, .08);
+        }
+
+        .terminal-log::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, .15);
+        }
+
+        .code-output {
+            font-family: var(--mono);
+            font-size: 12.5px;
+            line-height: 1.7;
+            color: #c5cdd8;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* Token colours */
+        .token-string {
+            color: #a5d6ff;
+        }
+
+        .token-number {
+            color: #79c0ff;
+        }
+
+        .token-boolean {
+            color: #ff9492;
+        }
+
+        .token-null {
+            color: #ff9492;
+            font-style: italic;
+        }
+
+        .token-key {
+            color: #7ce38b;
+        }
+
+        /* =====================================================================
+   RESPONSIVE
+   ===================================================================== */
+
+        @media (max-width: 960px) {
+            .content {
+                grid-template-columns: 1fr;
+                overflow-y: auto;
+            }
+
+            .pane-left {
+                border-right: none;
+                border-bottom: 1px solid var(--c-border);
+            }
+
+            .terminal-wrap {
+                min-height: 360px;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <div class="app-container">
-        <!-- Sidebar -->
+    <div class="app">
+
+        <!-- ═══ SIDEBAR ═══ -->
         <nav class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo-area">
-                    <div class="logo-icon"></div>
-                    <h1>WMTP<span class="logo-accent">Hub</span></h1>
-                </div>
-                <p class="subtitle">Next-Gen Mail Protocol</p>
 
-                <button id="theme-toggle" class="btn btn-ghost btn-sm"
-                    style="margin-top: 16px; width: 100%; border-radius: 8px;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        style="margin-right: 6px;">
-                        <circle cx="12" cy="12" r="5" />
+            <div class="sidebar-brand">
+                <div class="brand-mark">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.95)"
+                        stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path
-                            d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" />
+                            d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.73A2 2 0 012 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16z" />
                     </svg>
-                    <span id="theme-toggle-text">Light Mode</span>
-                </button>
-
-                <div class="status-card">
-                    <div class="status-indicator">
-                        <div id="status-dot" class="dot"></div>
-                    </div>
-                    <div class="status-details">
-                        <span id="status-text" class="status-title">Connecting...</span>
-                        <span id="session-email" class="status-session">No Session</span>
-                    </div>
+                </div>
+                <div>
+                    <div class="brand-name">WMTP<em>Hub</em></div>
+                    <span class="brand-tag">Protocol Testing Suite</span>
                 </div>
             </div>
 
-            <div class="cmd-list-container" id="sidebar-cmds">
-                <!-- Dynamically populated via tester.js -->
+            <div class="sidebar-status">
+                <div class="status-ring">
+                    <div id="status-dot" class="dot"></div>
+                </div>
+                <div class="status-info">
+                    <span id="status-text" class="status-label">Connecting…</span>
+                    <span id="session-email" class="status-session">No session active</span>
+                </div>
             </div>
+
+            <div class="nav-scroll" id="sidebar-cmds">
+                <!-- populated by tester.js -->
+            </div>
+
         </nav>
 
+        <!-- Resizer -->
         <div class="resizer" id="resizer"></div>
 
-        <!-- Main Workspace -->
+        <!-- ═══ WORKSPACE ═══ -->
         <main class="workspace">
-            <!-- Header for active command -->
-            <header class="workspace-header">
-                <div class="cmd-title-area">
-                    <h2 id="active-cmd-name" class="cmd-title">INIT</h2>
-                    <p class="cmd-desc">Configure command parameters and dispatch to the server.</p>
+
+            <!-- Top Bar -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <span class="topbar-badge">CMD</span>
+                    <span id="active-cmd-name" class="topbar-name">INIT</span>
+                    <span class="topbar-sep">/</span>
+                    <span class="topbar-desc">Configure parameters and dispatch to server</span>
+                </div>
+                <div class="topbar-right">
+                    <div class="pill">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        <span id="last-response-time">— ms</span>
+                    </div>
+                    <div class="pill">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                        WebTransport
+                    </div>
                 </div>
             </header>
 
-            <div class="workspace-content">
+            <!-- Content Grid -->
+            <div class="content">
+
                 <!-- Left: Form -->
-                <div class="form-section">
-                    <div class="panel glass-panel" id="form-panel">
-                        <!-- Dynamically populated -->
+                <div class="pane pane-left">
+                    <div class="pane-header">
+                        <div class="pane-title">
+                            <span class="pane-title-accent"></span>
+                            Parameters
+                        </div>
+                        <div class="pane-actions">
+                            <button class="btn-xs"
+                                onclick="document.querySelectorAll('.form-control').forEach(i=>i.tagName!=='SELECT'&&(i.value=''))">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.2">
+                                    <path
+                                        d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                </svg>
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-scroll">
+                        <div id="form-panel"></div>
                     </div>
                 </div>
 
-                <!-- Right: Results -->
-                <div class="results-section">
-                    <div class="panel glass-panel results-panel" id="result-area">
-                        <div class="panel-header">
-                            <h3><span class="pulse-icon"></span> Live Stream</h3>
-                            <button class="btn btn-sm btn-ghost"
-                                onclick="document.getElementById('result-area').classList.remove('visible')">Clear
-                                Log</button>
+                <!-- Right: Terminal -->
+                <div class="pane">
+                    <div class="terminal-wrap">
+
+                        <div class="terminal-bar">
+                            <div class="tbar-dots">
+                                <div class="tbar-dot td-r"></div>
+                                <div class="tbar-dot td-y"></div>
+                                <div class="tbar-dot td-g"></div>
+                            </div>
+                            <span class="tbar-label">wmtp — response stream</span>
+                            <div class="tbar-right">
+                                <div class="live-badge"><span class="live-dot"></span>LIVE</div>
+                                <button class="tbar-btn" onclick="clearLog()">Clear</button>
+                            </div>
                         </div>
-                        <div class="log-viewport">
+
+                        <!-- Empty state -->
+                        <div class="terminal-empty-state" id="result-empty">
+                            <div class="empty-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                    stroke="rgba(255,255,255,.28)" stroke-width="1.8">
+                                    <polyline points="4 17 10 11 4 5" />
+                                    <line x1="12" y1="19" x2="20" y2="19" />
+                                </svg>
+                            </div>
+                            <p>Waiting for a command<br>Hit Send to see the response</p>
+                        </div>
+
+                        <!-- Log (hidden until first result) -->
+                        <div class="terminal-log" id="result-area" style="display:none;">
                             <pre id="result-content" class="code-output"></pre>
                         </div>
+
                     </div>
                 </div>
+
             </div>
         </main>
     </div>
 
-    <!-- Core Dependencies -->
+    <!-- JS Dependencies -->
     <script src="js/transport.js"></script>
     <script src="js/protocol.js"></script>
     <script src="js/schema.js"></script>
-    <!-- Tester Logic -->
     <script src="tester.js"></script>
 
-    <!-- Theme Toggle Logic -->
+    <!-- Adapter: bridge tester.js expectations to new markup -->
     <script>
-        const themeToggle = document.getElementById('theme-toggle');
-        const themeText = document.getElementById('theme-toggle-text');
-        themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('light-theme');
-            if (document.body.classList.contains('light-theme')) {
-                themeText.innerText = 'Dark Mode';
-            } else {
-                themeText.innerText = 'Light Mode';
-            }
-        });
+        // 1. Patch result-area classList so tester.js show/hide works
+        (function () {
+            const log = document.getElementById('result-area');
+            const empty = document.getElementById('result-empty');
+            const origAdd = DOMTokenList.prototype.add;
+            const origRemove = DOMTokenList.prototype.remove;
+
+            log.classList.add = function (...args) {
+                origAdd.apply(this, args);
+                if (args.includes('visible')) {
+                    log.style.display = 'block';
+                    empty.style.display = 'none';
+                }
+            };
+
+            log.classList.remove = function (...args) {
+                origRemove.apply(this, args);
+                if (args.includes('visible')) {
+                    log.style.display = 'none';
+                    empty.style.display = '';
+                    document.getElementById('result-content').innerHTML = '';
+                }
+            };
+        })();
+
+        // 2. Clear button helper
+        function clearLog() {
+            const log = document.getElementById('result-area');
+            const empty = document.getElementById('result-empty');
+            document.getElementById('result-content').innerHTML = '';
+            log.style.display = 'none';
+            empty.style.display = '';
+        }
+
+        // 3. Response timing — hook transport.send to capture round-trip time
+        (function () {
+            const chip = document.getElementById('last-response-time');
+            let t0 = 0;
+
+            const orig = wmtpTransport.send.bind(wmtpTransport);
+            wmtpTransport.send = async function (data) {
+                t0 = performance.now();
+                return orig(data);
+            };
+
+            // Poll until protocol callback is set, then wrap it once
+            const poll = setInterval(() => {
+                if (wmtpProtocol.onResponse) {
+                    const prev = wmtpProtocol.onResponse;
+                    wmtpProtocol.onResponse = function (msg) {
+                        if (t0) {
+                            chip.textContent = Math.round(performance.now() - t0) + ' ms';
+                            t0 = 0;
+                        }
+                        prev.call(this, msg);
+                    };
+                    clearInterval(poll);
+                }
+            }, 200);
+        })();
     </script>
+
+    <!-- Override tester.js CSS class names to match our design system -->
+    <style>
+        /* form-group injected by tester.js */
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--c-text-2);
+        }
+
+        .req-star {
+            color: var(--c-red);
+            font-size: 11px;
+        }
+
+        .type-hint {
+            margin-left: auto;
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--c-text-3);
+            background: var(--c-surface-3);
+            padding: 1px 6px;
+            border-radius: 4px;
+            border: 1px solid var(--c-border);
+        }
+
+        .form-control {
+            width: 100%;
+            background: var(--c-surface);
+            border: 1.5px solid var(--c-border);
+            border-radius: var(--radius-sm);
+            padding: 8px 11px;
+            color: var(--c-text);
+            font-family: var(--mono);
+            font-size: 12.5px;
+            transition: border-color .15s, box-shadow .15s;
+            outline: none;
+        }
+
+        .form-control:hover {
+            border-color: var(--c-border-2);
+        }
+
+        .form-control:focus {
+            border-color: var(--c-blue);
+            box-shadow: 0 0 0 3px var(--c-blue-glow);
+            background: #fff;
+        }
+
+        .form-control::placeholder {
+            color: var(--c-text-3);
+            font-family: var(--font);
+            font-size: 12.5px;
+        }
+
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238b91a7' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 30px;
+            cursor: pointer;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 76px;
+            line-height: 1.55;
+        }
+
+        /* tester.js primary send button */
+        .btn.btn-primary {
+            width: 100%;
+            padding: 11px 20px;
+            background: var(--c-blue);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font);
+            font-weight: 600;
+            font-size: 13.5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all .15s;
+            box-shadow: 0 1px 3px rgba(37, 99, 235, .3), 0 4px 12px rgba(37, 99, 235, .2);
+            margin-top: 6px;
+        }
+
+        .btn.btn-primary:hover {
+            background: #1d4ed8;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, .4), 0 6px 20px rgba(37, 99, 235, .25);
+            transform: translateY(-1px);
+        }
+
+        .btn.btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* ghost / sm buttons used elsewhere */
+        .btn.btn-ghost,
+        .btn.btn-sm.btn-ghost {
+            padding: 4px 10px;
+            border-radius: var(--radius-xs);
+            font-size: 11.5px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--c-border);
+            background: transparent;
+            color: var(--c-text-2);
+            font-family: var(--font);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn.btn-ghost:hover {
+            background: var(--c-surface-2);
+            color: var(--c-text);
+        }
+
+        /* no-params message */
+        #form-panel>p {
+            font-size: 13px;
+            color: var(--c-text-3);
+            padding: 2px 0 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #form-panel>p::before {
+            content: '';
+            display: inline-block;
+            width: 18px;
+            height: 1px;
+            background: var(--c-border-2);
+        }
+    </style>
 </body>
 
 </html>
