@@ -15,7 +15,7 @@ class WMTPTransport {
         this.onError = null;
 
         // Certificate hash for self-signed certs
-        this.certHash = 'hwkSz4hLSK4VNGThADyDcBiWwzQ4V2xadFmYSf5xJ58=';
+        this.certHash = 'EpzuoeGRhCbdgNECkq8GGHWfODhdaTErxS5u0MnMqz8=';
 
         // For measuring response time of a single in-flight request
         this._pendingResolve = null;
@@ -195,6 +195,7 @@ class WMTPTransport {
      */
     async _startReading() {
         const decoder = new TextDecoder();
+        let readBuffer = "";
 
         try {
             while (this.connected) {
@@ -206,10 +207,13 @@ class WMTPTransport {
                 }
 
                 if (value) {
-                    const message = decoder.decode(value);
-                    console.log('[Transport] Received:', message);
+                    const chunk = decoder.decode(value, { stream: true });
+                    readBuffer += chunk;
 
-                    const messages = this._parseMessages(message);
+                    // Parse what we can from the buffer
+                    const { messages, remaining } = this._parseMessages(readBuffer);
+                    readBuffer = remaining;
+
                     messages.forEach((msg) => {
                         if (this.onMessage) {
                             this.onMessage(msg);
@@ -225,27 +229,73 @@ class WMTPTransport {
     }
 
     /**
-     * Parse potentially multiple JSON messages
-     * @param {string} text - Raw text that may contain multiple JSON objects
-     * @returns {Array} Array of parsed objects
+     * Parse potentially multiple JSON messages from a buffer
+     * @param {string} text - Raw text buffer
+     * @returns {Object} { messages: Array, remaining: string }
      */
     _parseMessages(text) {
         const messages = [];
-        const parts = text.trim().split(/\}\s*\{/);
+        let remaining = text;
 
-        parts.forEach((part, index) => {
-            let json = part;
-            if (index > 0) json = '{' + json;
-            if (index < parts.length - 1) json = json + '}';
+        while (remaining.length > 0) {
+            remaining = remaining.trimStart();
+            if (remaining.length === 0) break;
 
-            try {
-                messages.push(JSON.parse(json));
-            } catch (e) {
-                console.warn('[Transport] Parse error:', e, json);
+            // Attempt to parse a single JSON object
+            let parsed = false;
+            let depth = 0;
+            let inString = false;
+            let escape = false;
+
+            // Scan for the end of the first JSON object
+            let endIndex = -1;
+            for (let i = 0; i < remaining.length; i++) {
+                const char = remaining[i];
+
+                if (!inString) {
+                    if (char === '{') depth++;
+                    else if (char === '}') depth--;
+                    else if (char === '"') inString = true;
+                } else {
+                    if (escape) {
+                        escape = false;
+                    } else if (char === '\\') {
+                        escape = true;
+                    } else if (char === '"') {
+                        inString = false;
+                    }
+                }
+
+                // If depth hits 0 after we've seen at least one '{', we found a full object boundary
+                if (depth === 0 && i > 0 && remaining[0] === '{') {
+                    endIndex = i;
+                    break;
+                }
             }
-        });
 
-        return messages;
+            if (endIndex !== -1) {
+                // We found a potentially complete JSON object
+                const jsonStr = remaining.substring(0, endIndex + 1);
+                try {
+                    messages.push(JSON.parse(jsonStr));
+                    remaining = remaining.substring(endIndex + 1);
+                    parsed = true;
+                } catch (e) {
+                    console.warn('[Transport] Parse error on substring:', e, jsonStr.substring(0, 50) + '...');
+                    // If it failed to parse even with matching braces, it might be corrupt. 
+                    // Break to avoid infinite loop, let the caller clear it or we just drop it.
+                    remaining = remaining.substring(endIndex + 1);
+                    parsed = true;
+                }
+            }
+
+            // If we couldn't parse another full object in this pass, break and wait for more data.
+            if (!parsed) {
+                break;
+            }
+        }
+
+        return { messages, remaining };
     }
 
     /**
@@ -263,15 +313,15 @@ class WMTPTransport {
     }
     // attachments
     async openAttachmentStream() {
-    if (!this.transport) {
-        throw new Error('Not connected');
+        if (!this.transport) {
+            throw new Error('Not connected');
+        }
+        const stream = await this.transport.createBidirectionalStream();
+        return {
+            send: stream.writable.getWriter(),
+            recv: stream.readable.getReader(),
+        };
     }
-    const stream = await this.transport.createBidirectionalStream();
-    return {
-        send: stream.writable.getWriter(),
-        recv: stream.readable.getReader(),
-    };
-}
 
 
     /**

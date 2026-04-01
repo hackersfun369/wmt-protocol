@@ -7,7 +7,7 @@ description = "WMTP - WebTransport Mail Transfer Protocol Server"
 license = "MIT" # repository = "https://github.com/yourusername/wmtp" 
 [dependencies] 
 s2n-quic = "1" # WebTransport / QUIC 
-wtransport = "0.1" 
+wtransport = { version = "0.1", features = ["quinn"] } 
 rustls-pemfile = "2"
 quinn = "0.10" # For BBR Config access
 # Async Runtime

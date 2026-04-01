@@ -1,109 +1,6 @@
-const COMMAND_SCHEMAS = {
-    // Session
-    INIT: {},
-    AUTH: { email: { type: 'string', required: true } },
-    RESUME: { token: { type: 'string', required: true } },
-    LOGOUT: { token: { type: 'string', required: false } },
-    SESSION_INFO: {},
-    SESSION_LIST: {},
-    SESSION_KILL: { token: { type: 'string', required: true } },
-    SESSION_SUSPEND: {},
-    SESSION_RESUME_SUSPENDED: { token: { type: 'string', required: true } },
-
-    // Health & Admin
-    HB: {},
-    PING: {},
-    PONG: {},
-    TIME: {},
-    VERSION_CHECK: { client_version: { type: 'string', required: true, default: '1.0.0' } },
-    CAPABILITIES: {},
-    CONFIG_PUBLIC_GET: {},
-    CONNECTION_INFO: {},
-    LIST: {},
-    DEBUG_ECHO: { message: { type: 'string', required: true } },
-
-    // Mailbox
-    MB_LIST: {},
-    MB_CREATE: { name: { type: 'string', required: true }, code: { type: 'string', required: false } },
-    MB_RENAME: { old_name: { type: 'string', required: true }, new_name: { type: 'string', required: true } },
-    MB_DELETE: { name: { type: 'string', required: true } },
-    MB_INFO: { name: { type: 'string', required: true } },
-    MB_PURGE_TRASH: {},
-    MB_SUBSCRIBE: { folder_code: { type: 'string', required: true } },
-    MB_UNSUBSCRIBE: { folder_code: { type: 'string', required: true } },
-
-    // Message
-    MSG_SEND: {
-        to: { type: 'array', required: true, hint: 'Comma separated emails' },
-        cc: { type: 'array', required: false },
-        bcc: { type: 'array', required: false },
-        subject: { type: 'string', required: true },
-        body: { type: 'text', required: true },
-        in_reply_to: { type: 'string', required: false }
-    },
-    MSG_SEND_DRAFT: {
-        to: { type: 'array', required: false },
-        subject: { type: 'string', required: false },
-        body: { type: 'text', required: true }
-    },
-    MSG_LIST: {
-        folder_code: { type: 'string', required: true, default: 'INBOX' },
-        offset: { type: 'number', required: false, default: 0 },
-        limit: { type: 'number', required: false, default: 50 },
-        sort: { type: 'string', required: false, default: 'desc' }
-    },
-    MSG_GET: { id: { type: 'string', required: true } },
-    MSG_HEADERS: { id: { type: 'string', required: true } },
-    MSG_THREAD: { thread_id: { type: 'string', required: true } },
-    MSG_MOVE: { id: { type: 'string', required: true }, target_folder: { type: 'string', required: true } },
-    MSG_COPY: { id: { type: 'string', required: true }, target_folder: { type: 'string', required: true } },
-    MSG_DELETE: { id: { type: 'string', required: true } },
-    MSG_UNDELETE: { id: { type: 'string', required: true } },
-    MSG_EXPUNGE: { id: { type: 'string', required: true } },
-    MSG_FLAG_SET: { id: { type: 'string', required: true }, flag: { type: 'string', required: true, default: 'UNREAD' } },
-    MSG_FLAG_CLEAR: { id: { type: 'string', required: true }, flag: { type: 'string', required: true, default: 'UNREAD' } },
-    MSG_BULK_ACTION: {
-        ids: { type: 'array', required: true, hint: 'Comma separated IDs' },
-        action: { type: 'string', required: true, hint: 'MOVE, DELETE, etc.' },
-        target_folder: { type: 'string', required: false }
-    },
-
-    // Search
-    SEARCH_GLOBAL: { query: { type: 'string', required: true } },
-    SEARCH_SIMPLE: { query: { type: 'string', required: true }, folder_code: { type: 'string', required: false } },
-    SEARCH_ADV: {
-        query: { type: 'string', required: false },
-        from: { type: 'string', required: false },
-        to: { type: 'string', required: false },
-        subject: { type: 'string', required: false },
-        has_attachment: { type: 'boolean', required: false }
-    },
-    SEARCH_SUGGEST: { query: { type: 'string', required: true } },
-
-    // Profile
-    PROFILE_GET: {},
-    PROFILE_SET: {
-        name: { type: 'string', required: false },
-        signature: { type: 'text', required: false },
-        timezone: { type: 'string', required: false },
-        avatar_url: { type: 'string', required: false }
-    },
-
-    // Preferences
-    PREF_GET: { key: { type: 'string', required: false, hint: 'Leave empty for all' } },
-    PREF_SET: { key: { type: 'string', required: true }, value: { type: 'string', required: true } },
-
-    // Attachments
-    ATTACH_UPLOAD_INIT: {
-        filename: { type: 'string', required: true },
-        mime_type: { type: 'string', required: true, default: 'application/octet-stream' },
-        size_bytes: { type: 'number', required: true }
-    },
-    ATTACH_GET: { attachment_id: { type: 'string', required: true } },
-};
-
 let currentCmd = 'INIT';
 let sessionToken = null;
+let selectedUploadFile = null; // Store file for upload
 
 // DOM Elements
 const sidebar = document.getElementById('sidebar');
@@ -115,34 +12,32 @@ const statusDot = document.getElementById('status-dot');
 const statusText = document.getElementById('status-text');
 const sessionEmail = document.getElementById('session-email');
 
-// Groups
+// Groups based on API reference
 const groups = {
     "Session": ["INIT", "AUTH", "RESUME", "LOGOUT", "SESSION_INFO", "SESSION_LIST", "SESSION_KILL", "SESSION_SUSPEND", "SESSION_RESUME_SUSPENDED"],
-    "Mailbox": ["MB_LIST", "MB_CREATE", "MB_RENAME", "MB_DELETE", "MB_INFO", "MB_PURGE_TRASH", "MB_SUBSCRIBE", "MB_UNSUBSCRIBE"],
-    "Message": ["MSG_SEND", "MSG_SEND_DRAFT", "MSG_LIST", "MSG_GET", "MSG_HEADERS", "MSG_THREAD", "MSG_MOVE", "MSG_COPY", "MSG_DELETE", "MSG_UNDELETE", "MSG_EXPUNGE", "MSG_FLAG_SET", "MSG_FLAG_CLEAR", "MSG_BULK_ACTION"],
-    "Search": ["SEARCH_GLOBAL", "SEARCH_SIMPLE", "SEARCH_ADV", "SEARCH_SUGGEST"],
-    "Profile Data": ["PROFILE_GET", "PROFILE_SET", "PREF_GET", "PREF_SET"],
-    "System / Network": ["HB", "PING", "PONG", "TIME", "VERSION_CHECK", "CAPABILITIES", "CONFIG_PUBLIC_GET", "CONNECTION_INFO", "LIST", "DEBUG_ECHO", "ATTACH_UPLOAD_INIT", "ATTACH_GET"],
+    "Health & Admin": ["PING", "PONG", "HB", "UPTIME", "LATENCY_PING", "CONNECTION_INFO", "RATE_LIMIT_INFO", "DEBUG_ECHO", "INFO", "STATUS", "CAPABILITIES", "TIME", "VERSION_CHECK", "CONFIG_PUBLIC_GET", "CONNECTION_LIST"],
+    "Mailbox": ["MB_LIST", "MAIL_LIST", "MB_CREATE", "MB_RENAME", "MB_DELETE", "MB_INFO", "MB_PURGE_TRASH", "MB_SUBSCRIBE", "MB_UNSUBSCRIBE"],
+    "Messages": ["MSG_SEND", "MSG_SEND_DRAFT", "MSG_LIST", "MSG_GET", "MSG_HEADERS", "MSG_THREAD", "MSG_MOVE", "MSG_COPY", "MSG_DELETE", "MSG_EXPUNGE", "MSG_UNDELETE", "MSG_FLAG_SET", "MSG_FLAG_CLEAR", "MSG_BULK_ACTION"],
+    "Search": ["SEARCH", "SEARCH_GLOBAL", "SEARCH_ADV", "SEARCH_SUGGEST"],
+    "User Profile": ["PROFILE_GET", "PROFILE_SET", "PREF_GET", "PREF_SET"],
+    "Attachments": ["ATTACH_UPLOAD_INIT", "ATTACH_GET"]
 };
 
 // Resizer logic
 function setupResizer() {
     let isDragging = false;
-
-    resizer.addEventListener('mousedown', (e) => {
+    resizer.addEventListener('mousedown', () => {
         isDragging = true;
         resizer.classList.add('dragging');
         document.body.style.cursor = 'col-resize';
     });
-
     document.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
         const width = e.clientX;
-        if (width >= 200 && width <= 500) {
+        if (width >= 220 && width <= 450) {
             sidebar.style.width = width + 'px';
         }
     });
-
     document.addEventListener('mouseup', () => {
         isDragging = false;
         resizer.classList.remove('dragging');
@@ -176,27 +71,97 @@ function selectCommand(cmd) {
     renderForm();
 }
 
+// Syntax highlighting for JSON
+function syntaxHighlight(json) {
+    if (typeof json != 'string') {
+        json = JSON.stringify(json, undefined, 2);
+    }
+    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+        let cls = 'token-number';
+        if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+                cls = 'token-key';
+            } else {
+                cls = 'token-string';
+            }
+        } else if (/true|false/.test(match)) {
+            cls = 'token-boolean';
+        } else if (/null/.test(match)) {
+            cls = 'token-null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+    });
+}
+
 // Result Area Handling
 function updateResultArea(content, type = 'res') {
     const resultArea = document.getElementById('result-area');
     const resultContent = document.getElementById('result-content');
-    if (!resultArea || !resultContent) return;
 
     resultArea.classList.add('visible');
-    resultContent.innerText = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
-    resultContent.style.color = type === 'err' ? 'var(--error)' : type === 'req' ? 'var(--accent)' : '#10b981';
+
+    let displayStr = '';
+
+    // For outgoing request visually formatted strings
+    if (typeof content === 'string' && content.startsWith('Sending')) {
+        displayStr = `<span style="color:var(--primary)">${content}</span>`;
+    } else {
+        // Truncate giant base64 strings before stringifying to prevent browser lockup for the log view
+        let displayContent = content;
+        if (typeof content === 'object' && content !== null && content.cmd === 'ATTACH_GET' && content.data && content.data.content_b64) {
+            displayContent = JSON.parse(JSON.stringify(content)); // deep clone
+            if (displayContent.data.content_b64.length > 100) {
+                displayContent.data.content_b64 = displayContent.data.content_b64.substring(0, 100) + '... (truncated, ' + displayContent.data.content_b64.length + ' bytes total)';
+            }
+        }
+
+        // Format object correctly with syntax highlighting
+        let jsonStr = typeof displayContent === 'string' ? displayContent : JSON.stringify(displayContent, null, 2);
+        displayStr = syntaxHighlight(jsonStr);
+    }
+
+    // Append instead of overwrite if it's a response and we already have a request showing
+    if (type === 'res' || type === 'err') {
+        const prefix = type === 'res' ? '\n\n<span style="color:var(--success)">// --- Server Response --- //</span>\n' : '\n\n<span style="color:var(--error)">// --- Error Response --- //</span>\n';
+        resultContent.innerHTML += prefix + displayStr;
+
+        // --- Special Preview Rendering for ATTACH_GET ---
+        if (type === 'res' && typeof content === 'object' && content.cmd === 'ATTACH_GET' && content.data) {
+            const attach = content.data;
+            if (!attach.content_b64) {
+                // Binary stream trigger
+                handleAttachmentDownload(attach);
+            }
+        }
+
+        // auto-scroll to bottom //
+        const viewport = document.querySelector('.log-viewport');
+        if (viewport) viewport.scrollTop = viewport.scrollHeight;
+    } else {
+        // This handles "req" or append-style custom strings
+        if (typeof content === 'string' && content.includes('<span')) {
+            resultContent.innerHTML += content;
+            const viewport = document.querySelector('.log-viewport');
+            if (viewport) viewport.scrollTop = viewport.scrollHeight;
+        } else {
+            resultContent.innerHTML = displayStr; // Reset for new request
+        }
+    }
 }
 
 // Ensure WebTransport handles incoming data
 wmtpProtocol.onResponse = (msg) => {
-    updateResultArea(msg, 'res');
+    // Determine type by status error vs ok
+    const type = msg.status === 'ERR' ? 'err' : 'res';
+    updateResultArea(msg, type);
 
     // Automatically capture session token state if successful
-    if (msg.cmd === 'AUTH_OK' || msg.cmd === 'SESSION_RESUMED' || msg.cmd === 'SESSION_INIT') {
+    if (msg.cmd === 'AUTH_OK' || msg.cmd === 'SESSION_RESUMED' || msg.cmd === 'SESSION_INIT' || msg.session_token) {
         if (msg.session_token) {
             sessionToken = msg.session_token;
             localStorage.setItem('wmtp_session', sessionToken);
-            sessionEmail.innerText = msg.email ? msg.email : "Anonymous Token";
+            sessionEmail.innerText = msg.email ? msg.email : "Authenticated";
         }
     }
 
@@ -205,7 +170,130 @@ wmtpProtocol.onResponse = (msg) => {
         localStorage.removeItem('wmtp_session');
         sessionEmail.innerText = "No Session";
     }
+
+    // Auto-trigger upload if we get ATTACH_UPLOAD_INIT response and have a file pending
+    if (msg.cmd === 'ATTACH_UPLOAD_INIT' && msg.data && msg.data.upload && selectedUploadFile) {
+        handleAttachmentUpload(msg.data.upload, selectedUploadFile);
+        selectedUploadFile = null;
+    }
 };
+
+async function handleAttachmentUpload(uploadInfo, file) {
+    if (!WT_CONNECTED) return;
+    updateResultArea(`\n<span style="color:var(--primary)">// --- Starting binary stream upload for ${file.name} --- //</span>\n`, 'req');
+
+    try {
+        const streamInfo = await wmtpTransport.openAttachmentStream();
+        const writer = streamInfo.send;
+
+        // Prepare metadata JSON
+        const metaObj = {
+            upload_id: uploadInfo.upload_id,
+            filename: file.name,
+            mime_type: file.type || 'application/octet-stream',
+            size_bytes: file.size
+        };
+        const metaString = JSON.stringify(metaObj);
+        const encoder = new TextEncoder();
+        const metaBytes = encoder.encode(metaString);
+
+        // Prepare header: 12 bytes
+        const headerBuf = new ArrayBuffer(12);
+        const view = new DataView(headerBuf);
+        view.setBigUint64(0, BigInt(file.size), true); // true = little endian
+        view.setUint32(8, metaBytes.byteLength, true); // true = little endian
+
+        // Write header & metadata
+        await writer.write(new Uint8Array(headerBuf));
+        await writer.write(metaBytes);
+
+        // Stream file chunks
+        const reader = file.stream().getReader();
+        let uploaded = 0;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            await writer.write(value);
+            uploaded += value.byteLength;
+        }
+
+        await writer.close();
+        updateResultArea(`\n<span style="color:var(--success)">// --- Binary upload completed successfully (${uploaded} bytes) --- //</span>\n`, 'res');
+
+    } catch (e) {
+        updateResultArea(`\n<span style="color:var(--error)">// --- Upload failed: ${e.message} --- //</span>\n`, 'err');
+    }
+}
+
+async function handleAttachmentDownload(attach) {
+    if (!WT_CONNECTED) return;
+    updateResultArea(`\n<span style="color:var(--primary)">// --- Starting binary stream download for ${attach.filename} --- //</span>\n`, 'req');
+
+    try {
+        const streamInfo = await wmtpTransport.openAttachmentStream();
+        const writer = streamInfo.send;
+        const reader = streamInfo.recv;
+
+        // Prepare metadata JSON header
+        const metaObj = {
+            action: 'download',
+            upload_id: attach.attachment_id,
+        };
+        const metaString = JSON.stringify(metaObj);
+        const encoder = new TextEncoder();
+        const metaBytes = encoder.encode(metaString);
+
+        // Prepare header: 12 bytes. FileSize doesn't matter for download init, but we must send the 12 byte format
+        const headerBuf = new ArrayBuffer(12);
+        const view = new DataView(headerBuf);
+        view.setBigUint64(0, BigInt(0), true);
+        view.setUint32(8, metaBytes.byteLength, true);
+
+        // Write header & metadata
+        await writer.write(new Uint8Array(headerBuf));
+        await writer.write(metaBytes);
+        await writer.close(); // Important: signal we are done writing so server can start piping
+
+        // Stream file chunks back
+        let downloaded = 0;
+        const chunks = [];
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+            downloaded += value.byteLength;
+        }
+
+        // Combine chunks into a single Blob
+        const blob = new Blob(chunks, { type: attach.mime_type || 'application/octet-stream' });
+        const dataUrl = URL.createObjectURL(blob);
+
+        updateResultArea(`\n<span style="color:var(--success)">// --- Binary download completed successfully (${downloaded} bytes) --- //</span>\n`, 'res');
+
+        const resultContent = document.getElementById('result-content');
+        let previewHtml = `<div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border)">
+                <h4 style="color:var(--text); margin-bottom:10px;">Attachment Preview: ${attach.filename}</h4>`;
+
+        const mime = blob.type;
+        if (mime.startsWith('image/')) {
+            previewHtml += `<div style="text-align:center; padding: 10px; background: var(--surface); border-radius: 4px;"><img src="${dataUrl}" style="max-width:100%; border-radius:4px; max-height:400px; object-fit:contain;"></div>`;
+        } else if (mime.startsWith('text/')) {
+            const textContent = await blob.text();
+            previewHtml += `<pre style="background:var(--surface); padding:10px; border-radius:4px; max-height:300px; overflow:auto; white-space:pre-wrap; word-wrap:break-word;">${textContent.replace(/</g, '&lt;')}</pre>`;
+        } else {
+            previewHtml += `<a href="${dataUrl}" download="${attach.filename}" class="btn btn-primary" style="display:inline-block; margin-top:10px;">Download ${attach.filename}</a>`;
+        }
+        previewHtml += `</div>`;
+        resultContent.innerHTML += previewHtml;
+
+        const viewport = document.querySelector('.log-viewport');
+        if (viewport) viewport.scrollTop = viewport.scrollHeight;
+
+    } catch (e) {
+        updateResultArea(`\n<span style="color:var(--error)">// --- Download failed: ${e.message} --- //</span>\n`, 'err');
+    }
+}
 
 wmtpProtocol.onError = (msg) => {
     updateResultArea(msg, 'err');
@@ -215,7 +303,7 @@ wmtpProtocol.onError = (msg) => {
 let WT_CONNECTED = false;
 
 async function trackConnection() {
-    statusDot.className = 'status-dot';
+    statusDot.className = 'dot';
     statusText.innerText = 'Connecting...';
     try {
         await wmtpTransport.connect('https://127.0.0.1:4434/wmtp');
@@ -223,10 +311,10 @@ async function trackConnection() {
         statusDot.classList.add('connected');
         statusText.innerText = 'Secure Transport Connected';
 
-        // Auto resume if available
         const saved = localStorage.getItem('wmtp_session');
         if (saved) {
-            await wmtpProtocol.resume(saved);
+            // Auto-resume if token exists
+            await wmtpProtocol.send({ cmd: 'RESUME', data: { token: saved } });
         }
     } catch (e) {
         WT_CONNECTED = false;
@@ -238,59 +326,99 @@ async function trackConnection() {
 
 // Form Builder
 function renderForm() {
-    const schema = COMMAND_SCHEMAS[currentCmd];
-    if (!schema) {
-        formPanel.innerHTML = '<div style="color:var(--error)">Unknown Command</div>';
-        return;
-    }
+    selectedUploadFile = null; // Reset on form switch
+    // Note: COMMAND_SCHEMAS comes from schema.js (extracted exactly from docs)
+    const schema = COMMAND_SCHEMAS[currentCmd] || {};
 
     let html = '';
+
+    // Special custom UI for file upload
+    if (currentCmd === 'ATTACH_UPLOAD_INIT') {
+        html += `
+            <div class="form-group">
+                <label class="form-label">Select File to Upload <span class="req-star">*</span></label>
+                <input type="file" id="f_upload_picker" class="form-control" style="padding: 8px;">
+            </div>
+        `;
+    }
     const fields = Object.entries(schema);
 
     if (fields.length === 0) {
-        html += '<p style="color:var(--text-muted); font-size: 13px;">This command requires no additional parameters.</p>';
+        html += '<p style="color:var(--text-muted); font-size: 13px; margin-bottom: 24px;">This command requires no parameters.</p>';
     }
 
-    // Session token field
-    html += `
-        <div class="form-group" style="padding-bottom: 20px; border-bottom: 1px solid var(--border)">
-            <label>session_token (Auto-Injected)</label>
-            <input type="text" class="form-control" id="f_session_token" placeholder="Leave blank to use current active session" style="opacity: 0.6">
-        </div>
-    `;
-
     fields.forEach(([key, conf]) => {
+        // Special case: we auto-inject session_token, but let user override
+        if (key === 'session_token') {
+            html += `
+                <div class="form-group">
+                    <label class="form-label">${key} <span class="type-hint">(Auto-Injected)</span></label>
+                    <input type="text" class="form-control" id="f_${key}" placeholder="Leave blank to use active session [${sessionToken ? sessionToken.substring(0, 8) + '...' : 'None'}]">
+                </div>
+            `;
+            return;
+        }
+
+        const isReq = conf.required;
+        const typeRaw = conf.type ? conf.type.toLowerCase() : 'string';
+        const hint = conf.hint || '';
+
         let inputHtml = '';
-        if (conf.type === 'text') {
-            inputHtml = `<textarea id="f_${key}" class="form-control" placeholder="${conf.hint || ''}">${conf.default || ''}</textarea>`;
-        } else if (conf.type === 'boolean') {
-            inputHtml = `<select id="f_${key}" class="form-control"><option value="false">False</option><option value="true">True</option></select>`;
+        if (typeRaw.includes('bool')) {
+            inputHtml = `<select id="f_${key}" class="form-control">
+                <option value="">-- Match Type --</option>
+                <option value="true">True</option>
+                <option value="false">False</option>
+            </select>`;
+        } else if (typeRaw.includes('array')) {
+            inputHtml = `<textarea id="f_${key}" class="form-control" style="min-height: 60px;" placeholder="Comma separated values... (${hint})"></textarea>`;
+        } else if (typeRaw === 'object' || typeRaw === 'any') {
+            inputHtml = `<textarea id="f_${key}" class="form-control" style="min-height: 80px;" placeholder="Valid JSON... (${hint})"></textarea>`;
+        } else if (key === 'body' || key === 'signature') {
+            inputHtml = `<textarea id="f_${key}" class="form-control" style="min-height: 120px;" placeholder="${hint}"></textarea>`;
         } else {
-            inputHtml = `<input type="text" id="f_${key}" class="form-control" placeholder="${conf.hint || ''}" value="${conf.default || ''}">`;
+            inputHtml = `<input type="text" id="f_${key}" class="form-control" placeholder="${hint}">`;
         }
 
         html += `
             <div class="form-group">
-                <label>${key} ${conf.required ? '<span style="color:var(--error)">*</span>' : ''} <span style="font-weight:normal;color:#666">(${conf.type})</span></label>
+                <label class="form-label">${key} ${isReq ? '<span class="req-star">*</span>' : ''} <span class="type-hint">(${typeRaw})</span></label>
                 ${inputHtml}
             </div>
         `;
     });
 
-    html += `<button class="btn" onclick="executeCommand()">Send ${currentCmd}</button>`;
-
-    // Add result area
-    html += `
-        <div id="result-area" class="result-area">
-            <div class="result-header">
-                <h3>Server Response</h3>
-                <button class="btn" style="width: auto; padding: 4px 8px; font-size: 11px;" onclick="document.getElementById('result-area').classList.remove('visible')">Clear</button>
-            </div>
-            <pre id="result-content" class="result-content"></pre>
-        </div>
-    `;
+    html += `<button class="btn btn-primary" onclick="executeCommand()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        Send ${currentCmd}
+    </button>`;
 
     formPanel.innerHTML = html;
+
+    // Attach file picker listener if applicable
+    if (currentCmd === 'ATTACH_UPLOAD_INIT') {
+        const picker = document.getElementById('f_upload_picker');
+        if (picker) {
+            picker.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    selectedUploadFile = file;
+                    document.getElementById('f_filename').value = file.name;
+                    document.getElementById('f_mime_type').value = file.type || 'application/octet-stream';
+                    document.getElementById('f_size_bytes').value = file.size;
+                }
+            });
+        }
+        // Make auto-filled fields readonly
+        setTimeout(() => {
+            const f1 = document.getElementById('f_filename');
+            const f2 = document.getElementById('f_mime_type');
+            const f3 = document.getElementById('f_size_bytes');
+            if (f1) f1.readOnly = true;
+            if (f2) f2.readOnly = true;
+            if (f3) f3.readOnly = true;
+        }, 50);
+    }
 }
 
 // Execution
@@ -300,32 +428,51 @@ async function executeCommand() {
         return;
     }
 
-    const schema = COMMAND_SCHEMAS[currentCmd];
+    const schema = COMMAND_SCHEMAS[currentCmd] || {};
     let data = {};
-
-    const manualToken = document.getElementById('f_session_token').value;
-    if (manualToken) {
-        data.session_token = manualToken;
-    } else if (sessionToken && currentCmd !== 'INIT' && currentCmd !== 'RESUME') {
-        data.session_token = sessionToken;
-        if (currentCmd === 'AUTH' && !data.session_token) delete data.session_token;
-    }
 
     for (const [key, conf] of Object.entries(schema)) {
         const input = document.getElementById(`f_${key}`);
         if (!input) continue;
-        const val = input.value;
+
+        const val = input.value.trim();
+
+        if (key === 'session_token' || key === 'token') {
+            // For RESUME, `token` is the permanent token — don't auto-inject session token
+            if (key === 'token' && currentCmd === 'RESUME') {
+                // fall through to normal input handling
+            } else {
+                if (val !== '') {
+                    data[key] = val;
+                } else if (sessionToken && currentCmd !== 'INIT' && currentCmd !== 'RESUME') {
+                    // Auto inject active session token
+                    data[key] = sessionToken;
+                }
+                continue;
+            }
+        }
+
         if (val === '' && conf.required) {
             alert(`Missing required field: ${key}`);
             return;
         }
+
         if (val !== '') {
-            if (conf.type === 'array') {
-                data[key] = val.split(',').map(s => s.trim());
-            } else if (conf.type === 'number') {
+            const typeRaw = conf.type ? conf.type.toLowerCase() : 'string';
+
+            if (typeRaw.includes('array')) {
+                data[key] = val.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            } else if (typeRaw.includes('num') || typeRaw.includes('int')) {
                 data[key] = Number(val);
-            } else if (conf.type === 'boolean') {
+            } else if (typeRaw.includes('bool')) {
                 data[key] = val === 'true';
+            } else if (typeRaw === 'object' || typeRaw === 'any') {
+                try {
+                    data[key] = JSON.parse(val);
+                } catch (e) {
+                    alert(`Invalid JSON for field ${key}`);
+                    return;
+                }
             } else {
                 data[key] = val;
             }
@@ -337,8 +484,9 @@ async function executeCommand() {
         payload.data = data;
     }
 
-    // Show request state
-    updateResultArea(`Sending ${currentCmd}...\n` + JSON.stringify(payload, null, 2), 'req');
+    // Capture visual representation
+    const visualPayload = JSON.stringify(payload, null, 2);
+    updateResultArea(`Sending ${currentCmd}...\n\n${visualPayload}`, 'req');
 
     await wmtpProtocol.send(payload);
 }
@@ -347,6 +495,14 @@ async function executeCommand() {
 window.onload = () => {
     setupResizer();
     renderSidebar();
-    renderForm();
+
+    // Check if we have session in memory at init
+    const saved = localStorage.getItem('wmtp_session');
+    if (saved) {
+        sessionToken = saved;
+        sessionEmail.innerText = "Restoring...";
+    }
+
+    selectCommand('INIT'); // Force render initial state
     trackConnection();
 };

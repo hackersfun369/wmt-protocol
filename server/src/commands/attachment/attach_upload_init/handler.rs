@@ -30,15 +30,14 @@ fn gen_upload_id() -> String {
 }
 
 pub async fn handle_attach_upload_init(
+    token: &str,
     req: &Request,
     sessions: &SessionStore,
     uploads_coll: &Collection<PendingUpload>,
 ) -> String {
-    // session_token
-    let token = match req.data.get("session_token").and_then(|v| v.as_str()) {
-        Some(t) if !t.is_empty() => t,
-        _ => return Response::err("ATTACH_UPLOAD_INIT", "Missing session_token").to_json(),
-    };
+    if token.is_empty() {
+        return Response::err("ATTACH_UPLOAD_INIT", "Missing session token").to_json();
+    }
 
     // session
     let session = {

@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (url.includes('localhost') || url.includes('127.0.0.1')) {
-                wmtpTransport.setCertificateHash('c0bFjlLyBEeJAR8ECmPOd6ED6GQnjgweOptVMusDero=');
+                wmtpTransport.setCertificateHash('EpzuoeGRhCbdgNECkq8GGHWfODhdaTErxS5u0MnMqz8=');
                 log('Using self-signed certificate hash', 'info');
             }
 

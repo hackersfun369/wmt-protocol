@@ -14,6 +14,7 @@ use quinn::congestion::BbrConfig; // Added for BBR support
 
 // attachments: streaming into GridFS
 use futures_util::io::AsyncWriteExt as FuturesAsyncWriteExt;
+use futures_util::AsyncReadExt;
 use mongodb::bson::doc as bson_doc;
 use mongodb::gridfs::GridFsBucket;
 
@@ -23,6 +24,7 @@ use serde_json::Value;
 
 use crate::commands::mailbox::db::{MailboxRepository, Message};
 use crate::comm::{cmd, Request, Response};
+use crate::token::verify_jwt;
 use crate::commands::connections::list::handler as connection_list_handler;
 
 // session imports
@@ -127,7 +129,11 @@ pub async fn run_server() -> Result<()> {
     let mut transport_config = quinn::TransportConfig::default();
     transport_config.congestion_controller_factory(Arc::new(BbrConfig::default()));
     
-    let server_config = ServerConfig::builder()
+    // Increase the stream limits significantly to avoid connection drops during high concurrency
+    transport_config.max_concurrent_bidi_streams(500000u32.try_into().unwrap());
+    transport_config.max_concurrent_uni_streams(500000u32.try_into().unwrap());
+    
+    let mut server_config = ServerConfig::builder()
         .with_bind_address(format!("0.0.0.0:{port}").parse().unwrap())
         .with_identity(&identity)
         // Library Limitation: wtransport 0.1 does not support custom transport config.
@@ -137,6 +143,10 @@ pub async fn run_server() -> Result<()> {
         .max_idle_timeout(Some(Duration::from_secs(60)))?
         .keep_alive_interval(Some(Duration::from_secs(10)))
         .build();
+
+    // Inject our custom quinn transport config into the built server config
+    server_config.quic_config_mut().transport_config(Arc::new(transport_config));
+
     let endpoint = Endpoint::server(server_config)?;
     info!("WMTP server running on https://localhost:{port}");
 
@@ -361,10 +371,11 @@ async fn handle_attachment_stream(
 
     #[derive(serde::Deserialize)]
     struct AttachHeader {
+        action: Option<String>,
         upload_id: String,
-        filename: String,
-        mime_type: String,
-        size_bytes: u64,
+        filename: Option<String>,
+        mime_type: Option<String>,
+        size_bytes: Option<u64>,
     }
     
     let header: AttachHeader = serde_json::from_slice(&meta_buf).map_err(|e| {
@@ -394,12 +405,50 @@ async fn handle_attachment_stream(
     let db = uploads_coll.client().database(&ns.db);
     let bucket: GridFsBucket = db.gridfs_bucket(None);
 
-    // Use upload_id as GridFS filename key: "attach:<upload_id>"
     let gridfs_name = format!("attach:{}", header.upload_id);
 
+    // 4) Check Action
+    if let Some(action) = header.action {
+        if action == "download" {
+            if !pending.completed {
+                warn!("Cannot download uncompleted upload_id {}", header.upload_id);
+                return Ok(());
+            }
+
+            let mut download_stream = match bucket.open_download_stream_by_name(&gridfs_name).await {
+                Ok(s) => s,
+                Err(e) => {
+                    warn!("GridFS open_download_stream_by_name error: {:?}", e);
+                    return Ok(());
+                }
+            };
+
+            // Stream from GridFS to _send
+            loop {
+                let n = match download_stream.read(&mut buf).await {
+                    Ok(n) if n > 0 => n,
+                    Ok(_) => break, // EOF
+                    Err(e) => {
+                        warn!("GridFS download read error: {:?}", e);
+                        break;
+                    }
+                };
+
+                if let Err(e) = _send.write_all(&buf[..n]).await {
+                    warn!("Attachment send write error: {:?}", e);
+                    break;
+                }
+            }
+
+            let _ = _send.finish().await;
+            return Ok(());
+        }
+    }
+
+    // Default: UPLOAD logic
     // 4) open upload stream
     let mut upload_stream = bucket
-        .open_upload_stream(gridfs_name.clone())
+        .open_upload_stream(gridfs_name)
         .await?;
 
     // any leftover bytes after header newline
@@ -560,11 +609,22 @@ async fn process_request(
     let command = req.cmd.to_uppercase();
     eprintln!("[PROCESS_COMMAND] cmd: {}", command);
 
-    let token = req.data.get("session_token")
+    // Extract the raw token from the request, unwrapping JWTs if present.
+    // The server stores sessions under the raw hex token ("tok" inside the JWT).
+    let raw_token_str = req.data.get("session_token")
         .or_else(|| req.data.get("token"))
         .and_then(Value::as_str)
-        .unwrap_or_default()
-        .to_string();
+        .unwrap_or_default();
+
+    let token: String = if raw_token_str.contains('.') {
+        // Likely a JWT — try to unwrap it
+        match verify_jwt(raw_token_str) {
+            Some(claims) => claims.session_token,
+            None => raw_token_str.to_string(), // Invalid/expired JWT, pass as-is
+        }
+    } else {
+        raw_token_str.to_string() // Raw hex token, use directly
+    };
 
     match command.as_str() {
         // Sessions
@@ -636,8 +696,8 @@ async fn process_request(
         cmd::PREF_SET => handle_pref_set(&token, sessions, preferences_coll, &req).await,
         
         // Attachments
-        cmd::ATTACH_UPLOAD_INIT => attach_upload_init_handler::handle_attach_upload_init(&req, sessions, uploads_coll).await,
-        cmd::ATTACH_GET => attach_get_handler::handle_attach_get(&req, sessions, uploads_coll, db).await,
+        cmd::ATTACH_UPLOAD_INIT => attach_upload_init_handler::handle_attach_upload_init(&token, &req, sessions, uploads_coll).await,
+        cmd::ATTACH_GET => attach_get_handler::handle_attach_get(&token, &req, sessions, uploads_coll, db).await,
         
         // Admin
         cmd::CONNECTION_LIST => connection_list_handler::handle_connection_list(&req, connections).await,

@@ -5,12 +5,17 @@ pub async fn handle_session_kill(
     req: &Request,
     sessions: &SessionStore,
 ) -> String {
-    // 1) Validate token
-    let token = match req.data.get("token").and_then(|v| v.as_str()) {
-        Some(t) if !t.trim().is_empty() => t.trim().to_string(),
-        _ => {
-            return Response::err("SESSION_KILL", "Missing or empty token").to_json();
-        }
+    // 1) Validate token — accept session_token or token (both fields)
+    let token = req.data.get("session_token")
+        .or_else(|| req.data.get("token"))
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|t| !t.is_empty())
+        .map(str::to_string);
+
+    let token = match token {
+        Some(t) => t,
+        None => return Response::err("SESSION_KILL", "Missing or empty token").to_json(),
     };
 
     // 2) Remove session

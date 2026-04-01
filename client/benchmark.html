@@ -1,294 +1,488 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMTP Benchmark</title>
+    <title>WMTP Benchmark & Stress Test</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body {
-            font-family: monospace;
-            padding: 20px;
-            background: #1a1a1a;
-            color: #0f0;
-        }
-
-        h1 {
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
-        }
-
-        .result-box {
-            margin-top: 20px;
-            white-space: pre;
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            background: #333;
-            color: #fff;
-            border: 1px solid #555;
-        }
-
-        button:hover {
-            background: #444;
-        }
-
-        .running {
-            color: #ff0;
-        }
-
-        .done {
-            color: #0f0;
-        }
-
-        .error {
-            color: #f00;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .log-container { scrollbar-width: thin; scrollbar-color: #475569 #0b0f19; }
+        .log-container::-webkit-scrollbar { width: 8px; }
+        .log-container::-webkit-scrollbar-track { background: #0b0f19; border-radius: 4px; }
+        .log-container::-webkit-scrollbar-thumb { background-color: #475569; border-radius: 4px; }
+        .glow { text-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
     </style>
 </head>
+<body class="bg-gray-950 text-slate-200 min-h-screen p-6 sm:p-10 flex justify-center bg-[url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%231e293b\' fill-opacity=\'0.2\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]">
 
-<body>
-    <h1>WMTP Performance Benchmark</h1>
-    <p>Server: <input type="text" id="serverUrl" value="https://localhost:4433"
-            style="background:#333; color:#fff; border:1px solid #555; padding:5px; width:300px;"></p>
-    <button id="startBtn">Start Benchmark</button>
-    <div id="status" style="margin-top: 20px;"></div>
-    <div id="results" class="result-box"></div>
+    <div class="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
+        <div class="absolute inset-0 bg-blue-500/10 blur-[100px] -z-10 rounded-full"></div>
 
-    <script src="js/transport.js"></script>
+        <div class="flex flex-col gap-6 lg:col-span-2">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="zap" class="text-sky-400 w-8 h-8"></i>
+                    <h1 class="text-3xl font-bold text-white glow tracking-tight">WMTP Test Lab</h1>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="glass p-6 rounded-2xl flex flex-col gap-5 shadow-2xl">
+            <div>
+                <label class="block text-sm font-medium text-slate-400 mb-2">WebTransport Server URL</label>
+                <div class="relative">
+                    <i data-lucide="server" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5"></i>
+                    <input id="url" type="text" value="https://127.0.0.1:4434/wmtp" class="w-full bg-gray-900 border border-slate-700 text-white text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block pl-10 p-3 outline-none transition-all">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button id="startBtn" class="bg-sky-500 hover:bg-sky-400 text-gray-950 font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-95 text-xs sm:text-sm">
+                    <i data-lucide="play" class="w-4 h-4"></i>
+                    <span>Latency & Bandwidth</span>
+                </button>
+                <button id="stressBtn" class="bg-rose-500 hover:bg-rose-400 text-gray-950 font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-95 text-xs sm:text-sm">
+                    <i data-lucide="flame" class="w-4 h-4"></i>
+                    <span>Message Stress</span>
+                </button>
+                <button id="streamStressBtn" class="bg-purple-500 hover:bg-purple-400 text-gray-950 font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-95 text-xs sm:text-sm">
+                    <i data-lucide="network" class="w-4 h-4"></i>
+                    <span>Stream Capacity</span>
+                </button>
+            </div>
+            
+            <button id="stopStressBtn" class="hidden w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-95 border border-slate-500">
+                <i data-lucide="square" class="w-5 h-5 fill-current"></i>
+                <span>Stop Testing</span>
+            </button>
+
+            <div class="mt-2 bg-gray-900/50 rounded-lg p-4 flex items-center justify-between border border-slate-800">
+                <span class="text-sm text-slate-400 font-medium">Test Status</span>
+                <div id="statusBadge" class="flex items-center gap-2">
+                    <span class="relative flex h-3 w-3">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-500 opacity-75 hidden" id="statusPing"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-slate-500" id="statusDot"></span>
+                    </span>
+                    <span id="statusText" class="text-sm font-semibold text-slate-300">Idle</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics -->
+        <div class="glass p-6 rounded-2xl flex flex-col shadow-2xl h-full">
+            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <i data-lucide="activity" class="text-sky-400 w-5 h-5"></i> Live Telemetry
+            </h3>
+            <div id="metrics" class="grid grid-cols-2 gap-3 flex-1 content-start">
+                <div class="col-span-2 text-center text-slate-500 text-sm py-12 italic border border-dashed border-slate-700 rounded-lg" id="metricsEmpty">
+                    Metrics will populate automatically...
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs -->
+        <div class="glass p-6 rounded-2xl lg:col-span-2 shadow-2xl flex flex-col h-[400px]">
+            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2 justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="terminal" class="text-sky-400 w-5 h-5"></i> Event Console
+                </div>
+                <button onclick="document.getElementById('logs').innerHTML=''" class="text-xs text-slate-400 hover:text-white flex items-center gap-1"><i data-lucide="trash-2" class="w-3 h-3"></i> Clear</button>
+            </h3>
+            <div id="logs" class="log-container bg-[#0b0f19] flex-1 rounded-xl p-4 font-mono text-xs overflow-y-auto leading-relaxed border border-slate-800 space-y-1">
+                <div class="text-slate-500 italic">Ready for sequence initiation.</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Core Scripts -->
+    <script src="js/transport.js?v=2"></script>
+    <script src="js/protocol.js?v=2"></script>
+    <script src="js/schema.js?v=2"></script>
+
     <script>
-        const ACTIVE_HASH = 'pvfqEo/lPuFQ3MgDv3U2WWMrxO99qX60Ys0ZLImRkbw=';
+        lucide.createIcons();
 
-        const startBtn = document.getElementById('startBtn');
-        const statusDiv = document.getElementById('status');
-        const resultsDiv = document.getElementById('results');
-        const serverUrlInput = document.getElementById('serverUrl');
+        /* ================= UI HELPERS ================= */
+        const startBtn = document.getElementById("startBtn");
+        const stressBtn = document.getElementById("stressBtn");
+        const streamStressBtn = document.getElementById("streamStressBtn");
+        const stopStressBtn = document.getElementById("stopStressBtn");
+        
+        const logs = document.getElementById("logs");
+        const urlInput = document.getElementById("url");
+        const metricsDiv = document.getElementById("metrics");
+        const metricsEmpty = document.getElementById("metricsEmpty");
+        
+        const statusText = document.getElementById("statusText");
+        const statusDot = document.getElementById("statusDot");
+        const statusPing = document.getElementById("statusPing");
 
-        function log(msg) {
-            resultsDiv.textContent += msg + '\n';
+        let isRunning = false;
+        let isStressTesting = false;
+        let runningTestType = null;
+
+        function log(msg, type = "info") {
+            if (logs.querySelector('.italic') && logs.children.length === 1) logs.innerHTML = '';
+            const div = document.createElement("div");
+            
+            if (type === "error") div.className = "text-red-400 font-bold";
+            else if (type === "success") div.className = "text-green-400";
+            else if (type === "warn") div.className = "text-amber-400";
+            else div.className = "text-slate-300";
+            
+            const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit', fractionalSecondDigits: 3 });
+            div.innerHTML = `<span class="text-slate-500">[${time}]</span> ${msg}`;
+            
+            logs.appendChild(div);
+            logs.scrollTop = logs.scrollHeight;
         }
 
-        startBtn.addEventListener('click', async () => {
+        function setStatus(text, state) {
+            statusText.textContent = text;
+            statusPing.classList.add('hidden');
+            
+            if (state === "running") {
+                statusText.className = "text-sm font-semibold text-amber-400";
+                statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-amber-400";
+                statusPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75";
+                statusPing.classList.remove('hidden');
+            } else if (state === "stress" || state === "stream") {
+                statusText.className = `text-sm font-semibold ${state === "stress" ? "text-rose-500" : "text-purple-500"}`;
+                statusDot.className = `relative inline-flex rounded-full h-3 w-3 ${state === "stress" ? "bg-rose-500" : "bg-purple-500"}`;
+                statusPing.className = `animate-ping absolute inline-flex h-full w-full rounded-full ${state === "stress" ? "bg-rose-500" : "bg-purple-500"} opacity-75`;
+                statusPing.classList.remove('hidden');
+            } else if (state === "done") {
+                statusText.className = "text-sm font-semibold text-green-400";
+                statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-green-500";
+            } else if (state === "error") {
+                statusText.className = "text-sm font-semibold text-red-500";
+                statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-red-500";
+            } else {
+                statusText.className = "text-sm font-semibold text-slate-300";
+                statusDot.className = "relative inline-flex rounded-full h-3 w-3 bg-slate-500";
+            }
+        }
+
+        function upsertMetric(id, name, value, unit = "") {
+            if (metricsEmpty) metricsEmpty.style.display = 'none';
+            
+            let div = document.getElementById("metric-" + id);
+            if (!div) {
+                div = document.createElement("div");
+                div.id = "metric-" + id;
+                div.className = "bg-gray-900 border border-slate-700/50 rounded-lg p-3 flex flex-col justify-center items-center hover:bg-gray-800 transition-colors pointer-default zoom-in h-20";
+                metricsDiv.appendChild(div);
+            }
+            div.innerHTML = `
+                <span class="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1 text-center leading-tight">${name}</span>
+                <span class="text-lg font-bold text-sky-300">${value} <span class="text-xs font-normal text-slate-500">${unit}</span></span>
+            `;
+        }
+
+        function disableControls(enableStop = false) {
             startBtn.disabled = true;
-            resultsDiv.textContent = '';
-            statusDiv.textContent = 'Running...';
-            statusDiv.className = 'running';
+            stressBtn.disabled = true;
+            streamStressBtn.disabled = true;
+            urlInput.disabled = true;
+            isRunning = true;
+            metricsDiv.innerHTML = "";
+            if (metricsEmpty) {
+                metricsDiv.appendChild(metricsEmpty);
+                metricsEmpty.style.display = 'block';
+            }
 
-            const url = serverUrlInput.value;
-            const transport = new WMTPTransport();
+            if (enableStop) {
+                startBtn.classList.add('hidden');
+                stressBtn.classList.add('hidden');
+                streamStressBtn.classList.add('hidden');
+                stopStressBtn.classList.remove('hidden');
+            }
+        }
 
-            transport.setCertificateHash(ACTIVE_HASH);
+        function enableControls() {
+            isRunning = false;
+            startBtn.disabled = false;
+            stressBtn.disabled = false;
+            streamStressBtn.disabled = false;
+            urlInput.disabled = false;
+            stopStressBtn.classList.add('hidden');
+
+            startBtn.classList.remove('hidden');
+            stressBtn.classList.remove('hidden');
+            streamStressBtn.classList.remove('hidden');
+        }
+
+        stopStressBtn.onclick = () => { isStressTesting = false; log(`Stopping ${runningTestType}...`, "warn"); };
+
+        /* ================= STD BENCHMARK ================= */
+        startBtn.onclick = async () => {
+            if (isRunning) return;
+            disableControls();
+
+            const url = urlInput.value;
+            let transport;
 
             try {
-                // 1. Connection Latency
-                log('--- 1. Connection Latency ---');
+                setStatus("Connecting...", "running");
+                transport = new wmtpTransport.constructor();
+
                 const t0 = performance.now();
                 await transport.connect(url);
                 const t1 = performance.now();
-                const connectTime = t1 - t0;
-                log(`Connection Established: ${connectTime.toFixed(2)} ms`);
 
-                // 2. RTT (Ping)
-                log('\n--- 2. Round Trip Time (RTT) ---');
-                let totalRtt = 0;
-                const iterations = 10;
-                for (let i = 0; i < iterations; i++) {
-                    const { responseTimeMs } = await transport.sendWithTiming({ cmd: 'PING' });
-                    totalRtt += responseTimeMs;
-                    await new Promise(r => setTimeout(r, 50));
+                upsertMetric("conn", "Conn Time", (t1 - t0).toFixed(1), "ms");
+                log("✔ Connected", "success");
+
+                // --- INIT ---
+                await transport.sendWithTiming({ cmd: "INIT" });
+                upsertMetric("init", "Init", "OK", "");
+
+                // --- AUTH ---
+                const { response: authResp } = await transport.sendWithTiming({ cmd: "AUTH", data: { email: "benchmark@wmtp.online" } });
+                if (authResp.status !== "OK") throw new Error("AUTH failed");
+                const token = authResp.session_token;
+
+                // --- RTT ---
+                let total = 0;
+                for (let i = 0; i < 10; i++) {
+                    const { responseTimeMs } = await transport.sendWithTiming({ cmd: "PING" });
+                    total += responseTimeMs;
                 }
-                const avgRtt = totalRtt / iterations;
-                log(`Average RTT (10 pings): ${avgRtt.toFixed(2)} ms`);
+                upsertMetric("rtt", "Avg RTT", (total / 10).toFixed(2), "ms");
 
-                // 3. Throughput (Upload)
-                log('\n--- 3. Throughput (1MB Upload) ---');
-                const size = 1024 * 1024; // 1MB
+                // --- UPLOAD ---
+                const size = 1024 * 1024;
                 const buffer = new Uint8Array(size);
-                for (let i = 0; i < size; i++) buffer[i] = i % 255;
-
-                log('(Authenticating...)');
-                const { response: initSess } = await transport.sendWithTiming({ cmd: 'INIT' });
-
-                const { response: authResp } = await transport.sendWithTiming({
-                    cmd: 'AUTH',
-                    data: { email: 'benchmark@wmtp.online' }
+                const { response: uploadInit } = await transport.sendWithTiming({
+                    cmd: "ATTACH_UPLOAD_INIT",
+                    data: { session_token: token, filename: "bench.bin", mime_type: "application/octet-stream", size_bytes: size }
                 });
 
-                if (authResp.status === 'OK') {
-                    const token = authResp.session_token;
-
-                    const { response: uploadInit } = await transport.sendWithTiming({
-                        cmd: 'ATTACH_UPLOAD_INIT',
-                        data: {
-                            session_token: token,
-                            filename: 'bench_1mb.bin',
-                            mime_type: 'application/octet-stream',
-                            size_bytes: size
-                        }
-                    });
-
-                    if (uploadInit.status === 'OK') {
-                        const uploadId = uploadInit.data.upload.upload_id;
-
-                        const tStart = performance.now();
-                        const { send } = await transport.openAttachmentStream();
-
-                        const header = JSON.stringify({
-                            upload_id: uploadId,
-                            filename: 'bench_1mb.bin',
-                            mime_type: 'application/octet-stream',
-                            size_bytes: size
-                        }) + '\n';
-
-                        const writer = send;
-                        await writer.write(new TextEncoder().encode(header));
-                        await writer.write(buffer);
-                        await writer.close();
-
-                        const tEnd = performance.now();
-                        const durationSec = (tEnd - tStart) / 1000;
-                        const speed = 1 / durationSec; // MB/s
-
-                        log(`Upload Time (1MB): ${(tEnd - tStart).toFixed(2)} ms`);
-                        log(`Throughput (1MB): ${speed.toFixed(2)} MB/s`);
-                    } else {
-                        log(`Upload Init Failed: ${uploadInit.msg}`);
-                    }
-
-                    // 4. Large File Throughput (10MB)
-                    log('\n--- 4. Throughput (10MB Upload) ---');
-                    const size10 = 10 * 1024 * 1024; // 10MB
-                    const buffer10 = new Uint8Array(size10);
-
-                    const { response: uploadInit10 } = await transport.sendWithTiming({
-                        cmd: 'ATTACH_UPLOAD_INIT',
-                        data: {
-                            session_token: token,
-                            filename: 'bench_10mb.bin',
-                            mime_type: 'application/octet-stream',
-                            size_bytes: size10
-                        }
-                    });
-
-                    if (uploadInit10.status === 'OK') {
-                        const uploadId = uploadInit10.data.upload.upload_id;
-                        const tStart = performance.now();
-                        const { send } = await transport.openAttachmentStream();
-
-                        const header = JSON.stringify({
-                            upload_id: uploadId,
-                            filename: 'bench_10mb.bin',
-                            mime_type: 'application/octet-stream',
-                            size_bytes: size10
-                        }) + '\n';
-
-                        const writer = send;
-                        await writer.write(new TextEncoder().encode(header));
-                        await writer.write(buffer10);
-                        await writer.close();
-
-                        const tEnd = performance.now();
-                        const durationSec = (tEnd - tStart) / 1000;
-                        const speed = (size10 / 1024 / 1024) / durationSec; // MB/s
-
-                        log(`Upload Time (10MB): ${(tEnd - tStart).toFixed(2)} ms`);
-                        log(`Throughput (10MB): ${speed.toFixed(2)} MB/s`);
-                    }
-
-                    // 5. Requests Per Second (RPS)
-                    log('\n--- 5. Stress Test (1000 Pings) ---');
-                    const pings = 1000;
-                    const tRpsStart = performance.now();
-                    const promises = [];
-                    for (let i = 0; i < pings; i++) {
-                        promises.push(transport.send({ cmd: 'PING' }));
-                    }
-                    await Promise.all(promises);
-                    const tRpsEnd = performance.now();
-                    const durationRps = (tRpsEnd - tRpsStart) / 1000;
-                    const rps = pings / durationRps;
-
-                    log(`Processed ${pings} requests in ${durationRps.toFixed(2)}s`);
-                    log(`RPS: ${rps.toFixed(2)} req/sec`);
-
-                    // 6. Jitter (Variance in RTT)
-                    log('\n--- 6. Jitter Analysis ---');
-                    const rttSamples = [];
-                    for (let i = 0; i < 20; i++) {
-                        const { responseTimeMs } = await transport.sendWithTiming({ cmd: 'PING' });
-                        rttSamples.push(responseTimeMs);
-                        await new Promise(r => setTimeout(r, 10));
-                    }
-                    const mean = rttSamples.reduce((a, b) => a + b, 0) / rttSamples.length;
-                    const variance = rttSamples.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / rttSamples.length;
-                    const stdDev = Math.sqrt(variance);
-                    log(`Jitter (Std Dev): ${stdDev.toFixed(2)} ms`);
-
-                    // 7. Concurrency (Parallel Streams)
-                    log('\n--- 7. Concurrency (50 Parallel Streams) ---');
-                    const streams = 50;
-                    const tConcStart = performance.now();
-                    const streamPromises = [];
-
-                    const { response: concInit } = await transport.sendWithTiming({
-                        cmd: 'ATTACH_UPLOAD_INIT',
-                        data: {
-                            session_token: token,
-                            filename: 'conc_test.bin',
-                            mime_type: 'application/octet-stream',
-                            size_bytes: 100
-                        }
-                    });
-
-                    if (concInit.status === 'OK') {
-                        const upId = concInit.data.upload.upload_id;
-                        const smallPayload = new Uint8Array(100);
-
-                        for (let i = 0; i < streams; i++) {
-                            streamPromises.push((async () => {
-                                const { send } = await transport.openAttachmentStream();
-                                const header = JSON.stringify({
-                                    upload_id: upId,
-                                    filename: `conc_${i}.bin`,
-                                    mime_type: 'application/octet-stream',
-                                    size_bytes: 100
-                                }) + '\n';
-                                const writer = send;
-                                await writer.write(new TextEncoder().encode(header));
-                                await writer.write(smallPayload);
-                                await writer.close();
-                            })());
-                        }
-
-                        await Promise.all(streamPromises);
-                        const tConcEnd = performance.now();
-                        log(`Opened & closed ${streams} streams in ${(tConcEnd - tConcStart).toFixed(2)} ms`);
-                    }
-
-                    // 8. Datagram Loss (Simulated)
-                    log('\n--- 8. Datagram Loss ---');
-                    log('Skipped (Server echo support required)');
-
-                } else {
-                    log(`Auth Failed: ${authResp.msg}`);
+                if (uploadInit.status === "OK") {
+                    const uploadId = uploadInit.data.upload.upload_id;
+                    const upStart = performance.now();
+                    const { send } = await transport.openAttachmentStream();
+                    
+                    const header = JSON.stringify({ upload_id: uploadId, filename: "bench.bin", mime_type: "application/octet-stream", size_bytes: size }) + "\n";
+                    await send.write(new TextEncoder().encode(header));
+                    await send.write(buffer);
+                    await send.close();
+                    const upEnd = performance.now();
+                    const speed = 1 / ((upEnd - upStart) / 1000);
+                    upsertMetric("up", "Up Speed", speed.toFixed(2), "MB/s");
                 }
 
-                await transport.disconnect();
-                statusDiv.textContent = 'Done';
-                statusDiv.className = 'done';
+                // --- RPS ---
+                const requests = 1000;
+                const rpsStart = performance.now();
+                
+                await new Promise(async (resolve, reject) => {
+                    let rx = 0;
+                    const oldOnMessage = transport.onMessage;
+                    const tOut = setTimeout(() => { transport.onMessage = oldOnMessage; reject(new Error("Timeout waiting for 1k responses")); }, 5000);
+                    
+                    transport.onMessage = (msg) => {
+                        if (oldOnMessage) oldOnMessage(msg);
+                        rx++;
+                        if (rx === requests) {
+                            clearTimeout(tOut);
+                            transport.onMessage = oldOnMessage;
+                            resolve();
+                        }
+                    };
+                    for (let i = 0; i < requests; i++) transport.send({ cmd: "PING" }).catch(()=>{});
+                });
 
-            } catch (e) {
-                log(`\nError: ${e.message}`);
-                statusDiv.textContent = 'Error';
-                statusDiv.className = 'error';
+                const rpsEnd = performance.now();
+                const rps = requests / ((rpsEnd - rpsStart) / 1000);
+                upsertMetric("rps", "RPS", Math.floor(rps), "req/s");
+                
+                await transport.disconnect();
+                setStatus("Completed", "done");
+                log("Benchmark Completed", "success");
+
+            } catch (err) {
+                console.error(err);
+                log(`Failed: ${err.message}`, "error");
+                setStatus("Error", "error");
             } finally {
-                startBtn.disabled = false;
+                enableControls();
             }
-        });
+        };
+
+        /* ================= MSG STRESS TEST ================= */
+        stressBtn.onclick = async () => {
+             if (isRunning) return;
+             disableControls(true);
+             isStressTesting = true;
+             runningTestType = 'Message Stress Test';
+             
+             let transport;
+             try {
+                setStatus("Connecting...", "running");
+                transport = new wmtpTransport.constructor();
+                
+                await transport.connect(urlInput.value);
+                log("Connected to server, initiating MESSAGE STRESS TEST..", "success");
+                setStatus("Obliterating Server", "stress");
+                
+                await transport.sendWithTiming({ cmd: "INIT" });
+                await transport.sendWithTiming({ cmd: "AUTH", data: { email: "stress@wmtp.online" } });
+
+                let stressSent = 0;
+                let stressAcked = 0;
+                let lastStressTime = performance.now();
+                let lastStressAcked = 0;
+
+                const originalOnMessage = transport.onMessage;
+                transport.onMessage = (msg) => {
+                     stressAcked++;
+                     if (originalOnMessage) originalOnMessage(msg);
+                };
+
+                const uiInterval = setInterval(() => {
+                    if (!isStressTesting || !transport.isConnected()) {
+                        clearInterval(uiInterval);
+                        return;
+                    }
+                    const now = performance.now();
+                    const seconds = (now - lastStressTime) / 1000;
+                    if (seconds > 0) {
+                        const rps = (stressAcked - lastStressAcked) / seconds;
+                        upsertMetric("fps", "Real-Time RPS", Math.floor(rps), "/s");
+                        upsertMetric("acked", "Total Handled", stressAcked.toLocaleString());
+                        upsertMetric("in_flight", "In-Flight Queue", (stressSent - stressAcked).toLocaleString());
+                        lastStressAcked = stressAcked;
+                        lastStressTime = now;
+                    }
+                }, 1000);
+
+                log("Beginning infinite loop pumping... (Check server CPU!)", "warn");
+
+                const MAX_IN_FLIGHT = 90000; 
+                const BATCH_SIZE = 1000;
+
+                while (isStressTesting && transport.isConnected()) {
+                    if (stressSent - stressAcked < MAX_IN_FLIGHT) {
+                        for (let i = 0; i < BATCH_SIZE; i++) {
+                            transport.send({ cmd: "PING" }).catch(()=>{});
+                            stressSent++;
+                        }
+                    }
+                    await new Promise(r => setTimeout(r, 1));
+                }
+
+                if (!transport.isConnected()) {
+                     log("Connection dropped or server crashed!", "error");
+                     setStatus("Server Destroyed", "error");
+                } else {
+                     log("Message stress test halted successfully.", "success");
+                     setStatus("Completed", "done");
+                     await transport.disconnect();
+                }
+
+             } catch (err) {
+                 log(`Server failure or error: ${err.message}`, "error");
+                 setStatus("Server Died", "error");
+             } finally {
+                 isStressTesting = false;
+                 enableControls();
+             }
+        }
+
+        /* ================= STREAM CAPACITY TEST ================= */
+        streamStressBtn.onclick = async () => {
+             if (isRunning) return;
+             disableControls(true);
+             isStressTesting = true;
+             runningTestType = 'Stream Capacity Test';
+             
+             let transport;
+             try {
+                setStatus("Connecting...", "running");
+                transport = new wmtpTransport.constructor();
+                
+                await transport.connect(urlInput.value);
+                log("Connected to server, initiating PARALLEL STREAM CAPACITY TEST..", "success");
+                setStatus("Creating Parallel Streams...", "stream");
+
+                let streamsActive = 0;
+                let streamsFailed = 0;
+                let streamObjects = [];
+
+                const uiInterval = setInterval(() => {
+                    if (!isStressTesting || !transport.isConnected()) {
+                        clearInterval(uiInterval);
+                        return;
+                    }
+                    upsertMetric("active_streams", "Active Streams", streamsActive.toLocaleString(), "open");
+                    upsertMetric("failed_streams", "Rejected / Failed", streamsFailed.toLocaleString(), "errs");
+                    upsertMetric("total_streams", "Total Requested", (streamsActive + streamsFailed).toLocaleString(), "reqs");
+                }, 1000);
+
+                log("Rapidly creating parallel bidirectional streams. (Server will hold them open expecting headers).", "warn");
+
+                const MAX_STREAMS = 50000;
+                let requested = 0;
+
+                while (isStressTesting && transport.isConnected() && requested < MAX_STREAMS) {
+                    
+                    // Fire 50 streams without awaiting each individual's resolution so they attempt in parallel
+                    // Browsers might enforce a hard limit globally or per-connection depending on QUIC transport params.
+                    for (let i=0; i<50; i++) {
+                        if (requested >= MAX_STREAMS) break;
+                        requested++;
+                        transport.openAttachmentStream()
+                            .then((streamObj) => {
+                                streamsActive++;
+                                streamObjects.push(streamObj);
+                            })
+                            .catch((err) => {
+                                streamsFailed++;
+                            });
+                    }
+                    // Yield
+                    await new Promise(r => setTimeout(r, 10));
+
+                    // Slow down loop briefly if browser is catching up or rejecting en masse
+                    if (streamsFailed - streamsActive > 500) await new Promise(r => setTimeout(r, 50));
+                }
+
+                if (!transport.isConnected()) {
+                     log("Connection dropped or server crashed!", "error");
+                     setStatus("Server Destroyed", "error");
+                } else {
+                     log(`Stream creation sequence complete or halted. Cleaning up ${streamsActive} open streams...`, "warn");
+                     setStatus("Cleaning up", "running");
+                     
+                     // Cleanup
+                     for(let s of streamObjects) {
+                         try { await s.send.close(); } catch(e){}
+                     }
+                     streamObjects = [];
+                     
+                     log("Stream capacity test finished.", "success");
+                     setStatus("Completed", "done");
+                     await transport.disconnect();
+                }
+
+             } catch (err) {
+                 log(`Server failure or error: ${err.message}`, "error");
+                 setStatus("Server Died", "error");
+             } finally {
+                 isStressTesting = false;
+                 enableControls();
+             }
+        }
+
     </script>
 </body>
-
 </html>

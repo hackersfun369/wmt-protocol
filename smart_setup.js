@@ -13,6 +13,11 @@ const FILES_TO_UPDATE = [
         path: path.join(__dirname, 'client', 'js', 'transport.js'),
         regex: /this\.certHash = ('[^']+'|"[^"]+"|null);/g,
         template: (hash) => `this.certHash = '${hash}';`
+    },
+    {
+        path: path.join(__dirname, 'client', 'js', 'ui.js'),
+        regex: /wmtpTransport\.setCertificateHash\(['"][^'"]+['"]\);/g,
+        template: (hash) => `wmtpTransport.setCertificateHash('${hash}');`
     }
 ];
 

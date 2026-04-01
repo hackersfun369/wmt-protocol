@@ -10,13 +10,18 @@ class WMTPProtocol {
         this.authenticated = false;
         this.email = null;
         this.username = null;
-        
+
         this.onSessionInit = null;
         this.onAuthSuccess = null;
         this.onAuthFail = null;
         this.onHeartbeat = null;
         this.onResponse = null;
         this.onError = null;
+
+        // Bind the transport message event to our handler
+        if (this.transport) {
+            this.transport.onMessage = this.handleMessage.bind(this);
+        }
     }
 
     /**
@@ -56,12 +61,12 @@ class WMTPProtocol {
             cmd: 'LOGOUT',
             data: { token: this.sessionToken }
         });
-        
+
         this.sessionToken = null;
         this.authenticated = false;
         this.email = null;
         this.username = null;
-        
+
         return result;
     }
 
@@ -160,28 +165,28 @@ class WMTPProtocol {
 
     // attachments upload initialization
     async attachUploadInit(file) {
-    return this.send({
-        cmd: 'ATTACH_UPLOAD_INIT',
-        data: {
-            session_token: this.sessionToken,
-            filename: file.name,
-            mime_type: file.type || 'application/octet-stream',
-            size_bytes: file.size
-        }
-    });
-}
+        return this.send({
+            cmd: 'ATTACH_UPLOAD_INIT',
+            data: {
+                session_token: this.sessionToken,
+                filename: file.name,
+                mime_type: file.type || 'application/octet-stream',
+                size_bytes: file.size
+            }
+        });
+    }
 
-// attachment get
+    // attachment get
 
-async attachGet(attachmentId) {
-    return this.send({
-        cmd: 'ATTACH_GET',
-        data: {
-            session_token: this.sessionToken,
-            attachment_id: attachmentId,
-        },
-    });
-}
+    async attachGet(attachmentId) {
+        return this.send({
+            cmd: 'ATTACH_GET',
+            data: {
+                session_token: this.sessionToken,
+                attachment_id: attachmentId,
+            },
+        });
+    }
 
     /**
      * Get current session info
